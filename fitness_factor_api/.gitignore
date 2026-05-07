@@ -2,3 +2,4 @@ bin/
 obj/
 *.user
 run_output.txt
+firebase-service-account.json
