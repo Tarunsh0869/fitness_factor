@@ -11,7 +11,6 @@ import '../services/auth_prefs.dart';
 import '../widgets/exit_confirmation_sheet.dart';
 import 'settings_screen.dart';
 import 'login_screen.dart';
-import 'attendance_form_screen.dart';
 import 'stats_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -129,8 +128,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onGeofenceChange(bool isInside) async {
     setState(() => _isInsideGym = isInside);
-    if (isInside && _openSession == null) {
-      await AttendanceService.checkIn(widget.memberId, widget.gymId);
+    if (isInside) {
+      _autoCheckoutTimer?.cancel();
+      if (_openSession == null) {
+        await AttendanceService.checkIn(widget.memberId, widget.gymId);
+      }
     } else if (!isInside && _openSession != null) {
       await AttendanceService.notifyExit(widget.memberId);
       _startAutoCheckoutTimer();
@@ -202,17 +204,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(
-          builder: (_) => AttendanceFormScreen(
-            memberId: widget.memberId, gymId: widget.gymId,
-          ),
-        )),
-        backgroundColor: _blue,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Log Attendance',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _onRefresh,
@@ -561,13 +552,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHistoryTile(AttendanceRecord r) {
     final isOpen = r.isOpen;
-    return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => AttendanceFormScreen(
-          memberId: widget.memberId, gymId: widget.gymId, existing: r,
-        ),
-      )),
-      child: Container(
+    return Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
@@ -628,7 +613,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 }

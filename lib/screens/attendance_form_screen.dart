@@ -9,12 +9,14 @@ class AttendanceFormScreen extends StatefulWidget {
   final String memberId;
   final String gymId;
   final AttendanceRecord? existing;
+  final bool allowTimeEditing;
 
   const AttendanceFormScreen({
     super.key,
     required this.memberId,
     required this.gymId,
     this.existing,
+    this.allowTimeEditing = false,
   });
 
   @override
@@ -94,6 +96,15 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
   }
 
   Future<void> _submit() async {
+    if (!_isEdit && !widget.allowTimeEditing) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Attendance can only be created by gym location check-in'),
+        backgroundColor: _red,
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+
     setState(() => _loading = true);
     bool success;
     if (_isEdit) {
@@ -110,6 +121,7 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
         workoutType: _workoutType,
         notes:       _notesCtrl.text.trim(),
         checkedIn:   _checkedIn,
+        checkedOut:  _checkedOut,
       );
       success = id != null;
     }
@@ -228,7 +240,9 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
               icon: Icons.login_outlined,
               label: DateFormat('EEE, MMM d • hh:mm a').format(_checkedIn),
               color: _blue,
-              onTap: () => _pickDateTime(isCheckIn: true),
+              onTap: widget.allowTimeEditing
+                  ? () => _pickDateTime(isCheckIn: true)
+                  : null,
             ),
             const SizedBox(height: 12),
             _sectionLabel('Check-out Time'),
@@ -239,8 +253,10 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
                   ? DateFormat('EEE, MMM d • hh:mm a').format(_checkedOut!)
                   : 'Tap to set check-out time',
               color: _checkedOut != null ? _red : _muted,
-              onTap: () => _pickDateTime(isCheckIn: false),
-              trailing: _checkedOut != null
+              onTap: widget.allowTimeEditing
+                  ? () => _pickDateTime(isCheckIn: false)
+                  : null,
+              trailing: widget.allowTimeEditing && _checkedOut != null
                   ? GestureDetector(
                       onTap: () => setState(() => _checkedOut = null),
                       child: Icon(Icons.close, color: _muted, size: 18),
@@ -340,7 +356,7 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
     required IconData icon,
     required String label,
     required Color color,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
     Widget? trailing,
   }) {
     return GestureDetector(
@@ -363,8 +379,12 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
             Expanded(child: Text(label,
                 style: TextStyle(color: color, fontSize: 14,
                     fontWeight: FontWeight.w600))),
-            trailing ?? Icon(Icons.edit_outlined,
-                color: color.withOpacity(0.5), size: 16),
+            trailing ??
+                Icon(
+                  onTap == null ? Icons.lock_outline : Icons.edit_outlined,
+                  color: color.withOpacity(0.5),
+                  size: 16,
+                ),
           ],
         ),
       ),

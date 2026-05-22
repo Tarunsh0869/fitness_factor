@@ -135,22 +135,28 @@ class AttendanceService {
     required String workoutType,
     required String notes,
     required DateTime checkedIn,
+    DateTime? checkedOut,
   }) async {
     try {
-      // Guard: no duplicate open session
-      final open = await _db
-          .collection('attendance')
-          .where('memberId', isEqualTo: memberId)
-          .where('checkedOut', isNull: true)
-          .limit(1)
-          .get();
-      if (open.docs.isNotEmpty) return null;
+      if (checkedOut != null && checkedOut.isBefore(checkedIn)) return null;
+
+      // Guard only when creating another open session. Closed historical
+      // records should still be allowed while a live session exists.
+      if (checkedOut == null) {
+        final open = await _db
+            .collection('attendance')
+            .where('memberId', isEqualTo: memberId)
+            .where('checkedOut', isNull: true)
+            .limit(1)
+            .get();
+        if (open.docs.isNotEmpty) return null;
+      }
 
       final ref = await _db.collection('attendance').add({
         'memberId':    memberId,
         'gymId':       gymId,
         'checkedIn':   Timestamp.fromDate(checkedIn),
-        'checkedOut':  null,
+        'checkedOut':  checkedOut == null ? null : Timestamp.fromDate(checkedOut),
         'source':      'manual',
         'workoutType': workoutType,
         'notes':       notes,
@@ -166,10 +172,16 @@ class AttendanceService {
     DateTime? checkedOut,
   }) async {
     try {
+      if (checkedOut != null) {
+        final doc = await _db.collection('attendance').doc(sessionId).get();
+        final checkedIn = (doc.data()?['checkedIn'] as Timestamp?)?.toDate();
+        if (checkedIn != null && checkedOut.isBefore(checkedIn)) return false;
+      }
+
       await _db.collection('attendance').doc(sessionId).update({
         'workoutType': workoutType,
         'notes':       notes,
-        if (checkedOut != null) 'checkedOut': Timestamp.fromDate(checkedOut),
+        'checkedOut':  checkedOut == null ? null : Timestamp.fromDate(checkedOut),
       });
       return true;
     } catch (_) { return false; }
