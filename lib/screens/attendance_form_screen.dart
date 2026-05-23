@@ -22,13 +22,13 @@ class AttendanceFormScreen extends StatefulWidget {
 }
 
 class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
-  static const _blue  = Color(0xFF2563EB);
-  static const _blueDk = Color(0xFF1D4ED8);
-  static const _red   = Color(0xFFEF4444);
-  static const _bg    = Color(0xFFF0F4FF);
-  static const _card  = Colors.white;
-  static const _ink   = Color(0xFF111827);
-  static const _muted = Color(0xFF6B7280);
+  static const _blue  = Color(0xFF00E5FF);
+  static const _blueDk = Color(0xFF7C3DFF);
+  static const _red   = Color(0xFFFF2D75);
+  static const _bg    = Color(0xFF05070D);
+  static const _card  = Color(0xFF101827);
+  static const _ink   = Color(0xFFF8FAFC);
+  static const _muted = Color(0xFF94A3B8);
 
   final _notesCtrl = TextEditingController();
   String    _workoutType = 'General';
@@ -71,8 +71,14 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now(),
       builder: (ctx, child) => Theme(
-        data: ThemeData.light().copyWith(
-          colorScheme: const ColorScheme.light(primary: _blue),
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: _blue,
+            onPrimary: _bg,
+            surface: _card,
+            onSurface: _ink,
+          ),
+          dialogTheme: const DialogThemeData(backgroundColor: _card),
         ),
         child: child!,
       ),
@@ -82,8 +88,14 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
       context: context,
       initialTime: TimeOfDay.fromDateTime(initial),
       builder: (ctx, child) => Theme(
-        data: ThemeData.light().copyWith(
-          colorScheme: const ColorScheme.light(primary: _blue),
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: _blue,
+            onPrimary: _bg,
+            surface: _card,
+            onSurface: _ink,
+          ),
+          dialogTheme: const DialogThemeData(backgroundColor: _card),
         ),
         child: child!,
       ),
@@ -136,7 +148,7 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: _card,
         title: const Text('Delete Record',
             style: TextStyle(color: _ink, fontWeight: FontWeight.w700)),
         content: Text('This attendance record will be permanently deleted.',
@@ -199,7 +211,7 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
                       color: sel ? _blue.withOpacity(0.08) : _card,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: sel ? _blue : Colors.grey.shade200,
+                        color: sel ? _blue : const Color(0xFF243244),
                         width: sel ? 1.5 : 1,
                       ),
                     ),
@@ -281,11 +293,11 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
                 fillColor: _card,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(color: const Color(0xFF243244)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(color: const Color(0xFF243244)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),

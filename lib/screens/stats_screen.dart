@@ -12,13 +12,13 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  static const _blue  = Color(0xFF2563EB);
-  static const _green = Color(0xFF16A34A);
-  static const _red   = Color(0xFFEF4444);
-  static const _bg    = Color(0xFFF0F4FF);
-  static const _card  = Colors.white;
-  static const _ink   = Color(0xFF111827);
-  static const _muted = Color(0xFF6B7280);
+  static const _blue  = Color(0xFF00E5FF);
+  static const _green = Color(0xFF39FF14);
+  static const _red   = Color(0xFFFF2D75);
+  static const _bg    = Color(0xFF05070D);
+  static const _card  = Color(0xFF101827);
+  static const _ink   = Color(0xFFF8FAFC);
+  static const _muted = Color(0xFF94A3B8);
 
   Map<String, dynamic>? _stats;
   bool _loading = true;
@@ -54,7 +54,7 @@ class _StatsScreenState extends State<StatsScreen> {
           : RefreshIndicator(
               onRefresh: _load,
               color: _blue,
-              backgroundColor: Colors.white,
+              backgroundColor: _card,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
                 children: [
@@ -356,9 +356,9 @@ class _StatsScreenState extends State<StatsScreen> {
     final sorted = typeCount.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final total  = sorted.fold<int>(0, (s, e) => s + e.value);
-    final colors = [_blue, _green, _red, const Color(0xFFD97706),
-                    const Color(0xFF7C3AED), const Color(0xFF0891B2),
-                    const Color(0xFFDB2777), const Color(0xFF059669)];
+    final colors = [_blue, _green, _red, const Color(0xFFFFD166),
+                    const Color(0xFFB967FF), const Color(0xFF00F5D4),
+                    const Color(0xFFFF2D75), const Color(0xFF00F5D4)];
 
     return Container(
       padding: const EdgeInsets.all(20),

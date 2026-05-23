@@ -31,14 +31,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _blue   = Color(0xFF2563EB);
-  static const _blueDk = Color(0xFF1D4ED8);
-  static const _green  = Color(0xFF16A34A);
-  static const _bg     = Color(0xFFF0F4FF);
-  static const _card   = Colors.white;
-  static const _ink    = Color(0xFF111827);
-  static const _muted  = Color(0xFF6B7280);
-  static const _subtle = Color(0xFF9CA3AF);
+  static const _blue   = Color(0xFF00E5FF);
+  static const _blueDk = Color(0xFF7C3DFF);
+  static const _green  = Color(0xFF39FF14);
+  static const _bg     = Color(0xFF05070D);
+  static const _card   = Color(0xFF101827);
+  static const _ink    = Color(0xFFF8FAFC);
+  static const _muted  = Color(0xFF94A3B8);
+  static const _subtle = Color(0xFF64748B);
 
   bool _isInsideGym = false;
   bool _geoReady    = false;
@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Location permission required for auto attendance'),
-          backgroundColor: Color(0xFFEF4444),
+          backgroundColor: Color(0xFFFF2D75),
           behavior: SnackBarBehavior.floating,
         ));
       }
@@ -209,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: RefreshIndicator(
           onRefresh: _onRefresh,
           color: _blue,
-          backgroundColor: Colors.white,
+          backgroundColor: _card,
           child: CustomScrollView(
             slivers: [
               _buildAppBar(),
@@ -252,8 +252,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildAppBar() {
     final membershipColors = {
       'Basic':   _blue,
-      'Premium': const Color(0xFFD97706),
-      'VIP':     const Color(0xFF7C3AED),
+      'Premium': const Color(0xFFFFD166),
+      'VIP':     const Color(0xFFB967FF),
     };
     final badgeColor = membershipColors[_membership] ?? Colors.transparent;
 
@@ -449,7 +449,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+          colors: [Color(0xFF00E5FF), Color(0xFF7C3DFF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -587,7 +587,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: isOpen ? _blue.withOpacity(0.10) : const Color(0xFFF3F4F6),
+                color: isOpen ? _blue.withOpacity(0.10) : const Color(0xFF1E293B),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(

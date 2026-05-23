@@ -14,14 +14,14 @@ class AdminAttendanceScreen extends StatefulWidget {
 }
 
 class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
-  static const _blue   = Color(0xFF2563EB);
-  static const _green  = Color(0xFF16A34A);
-  static const _amber  = Color(0xFFD97706);
-  static const _bg     = Color(0xFFF0F4FF);
-  static const _card   = Colors.white;
-  static const _ink    = Color(0xFF111827);
-  static const _muted  = Color(0xFF6B7280);
-  static const _subtle = Color(0xFF9CA3AF);
+  static const _blue   = Color(0xFF00E5FF);
+  static const _green  = Color(0xFF39FF14);
+  static const _amber  = Color(0xFFFFD166);
+  static const _bg     = Color(0xFF05070D);
+  static const _card   = Color(0xFF101827);
+  static const _ink    = Color(0xFFF8FAFC);
+  static const _muted  = Color(0xFF94A3B8);
+  static const _subtle = Color(0xFF64748B);
 
   Map<String, dynamic> _data = {
     'records': [], 'totalVisits': 0, 'completed': 0,
@@ -47,8 +47,14 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
       builder: (ctx, child) => Theme(
-        data: ThemeData.light().copyWith(
-          colorScheme: const ColorScheme.light(primary: _blue),
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: _blue,
+            onPrimary: _bg,
+            surface: _card,
+            onSurface: _ink,
+          ),
+          dialogTheme: const DialogThemeData(backgroundColor: _card),
         ),
         child: child!,
       ),
@@ -147,7 +153,7 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
             _dayStat('Total Visits', '$total', _blue),
             _dayStat('Completed', '$completed', _green),
             _dayStat('Avg Duration', avgMin == 0 ? '\u2014' : _fmtDur(avgMin), _amber),
-            _dayStat('Peak Hour', peakStr, const Color(0xFF7C3AED)),
+            _dayStat('Peak Hour', peakStr, const Color(0xFFB967FF)),
           ]),
           if (totalMin > 0) ...[
             const SizedBox(height: 10),
@@ -278,7 +284,7 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
             Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: isOpen ? _blue.withOpacity(0.10) : const Color(0xFFF3F4F6),
+                color: isOpen ? _blue.withOpacity(0.10) : const Color(0xFF1E293B),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(

@@ -17,15 +17,15 @@ class AdminVerificationScreen extends StatefulWidget {
 
 class _AdminVerificationScreenState extends State<AdminVerificationScreen>
     with SingleTickerProviderStateMixin {
-  static const _blue   = Color(0xFF2563EB);
-  static const _green  = Color(0xFF16A34A);
-  static const _red    = Color(0xFFEF4444);
-  static const _amber  = Color(0xFFD97706);
-  static const _bg     = Color(0xFFF0F4FF);
-  static const _card   = Colors.white;
-  static const _ink    = Color(0xFF111827);
-  static const _muted  = Color(0xFF6B7280);
-  static const _subtle = Color(0xFF9CA3AF);
+  static const _blue   = Color(0xFF00E5FF);
+  static const _green  = Color(0xFF39FF14);
+  static const _red    = Color(0xFFFF2D75);
+  static const _amber  = Color(0xFFFFD166);
+  static const _bg     = Color(0xFF05070D);
+  static const _card   = Color(0xFF101827);
+  static const _ink    = Color(0xFFF8FAFC);
+  static const _muted  = Color(0xFF94A3B8);
+  static const _subtle = Color(0xFF64748B);
 
   late final TabController _tabs;
   List<Map<String, dynamic>> _pending  = [];
@@ -682,7 +682,7 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
     final membershipColors = {
       'Basic':   _blue,
       'Premium': _amber,
-      'VIP':     const Color(0xFF7C3AED),
+      'VIP':     const Color(0xFFB967FF),
     };
     final mColor = membershipColors[membership] ?? _blue;
 

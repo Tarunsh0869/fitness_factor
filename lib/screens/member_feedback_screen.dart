@@ -15,13 +15,13 @@ class MemberFeedbackScreen extends StatefulWidget {
 }
 
 class _MemberFeedbackScreenState extends State<MemberFeedbackScreen> {
-  static const _blue   = Color(0xFF2563EB);
-  static const _blueDk = Color(0xFF1D4ED8);
-  static const _green  = Color(0xFF16A34A);
-  static const _bg     = Color(0xFFF0F4FF);
-  static const _card   = Colors.white;
-  static const _ink    = Color(0xFF111827);
-  static const _muted  = Color(0xFF6B7280);
+  static const _blue   = Color(0xFF00E5FF);
+  static const _blueDk = Color(0xFF7C3DFF);
+  static const _green  = Color(0xFF39FF14);
+  static const _bg     = Color(0xFF05070D);
+  static const _card   = Color(0xFF101827);
+  static const _ink    = Color(0xFFF8FAFC);
+  static const _muted  = Color(0xFF94A3B8);
 
   final _msgCtrl = TextEditingController();
   String  _category = 'general';
@@ -135,7 +135,7 @@ class _MemberFeedbackScreenState extends State<MemberFeedbackScreen> {
                     color: sel ? _blue.withOpacity(0.08) : _card,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: sel ? _blue : Colors.grey.shade200,
+                      color: sel ? _blue : const Color(0xFF243244),
                       width: sel ? 1.5 : 1,
                     ),
                   ),
@@ -177,11 +177,11 @@ class _MemberFeedbackScreenState extends State<MemberFeedbackScreen> {
               fillColor: _card,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: Colors.grey.shade200),
+                borderSide: BorderSide(color: const Color(0xFF243244)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: Colors.grey.shade200),
+                borderSide: BorderSide(color: const Color(0xFF243244)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),

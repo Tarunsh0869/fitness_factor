@@ -27,12 +27,12 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  static const _blue  = Color(0xFF2563EB);
-  static const _red   = Color(0xFFEF4444);
-  static const _bg    = Color(0xFFF0F4FF);
-  static const _card  = Colors.white;
-  static const _ink   = Color(0xFF111827);
-  static const _muted = Color(0xFF6B7280);
+  static const _blue  = Color(0xFF00E5FF);
+  static const _red   = Color(0xFFFF2D75);
+  static const _bg    = Color(0xFF05070D);
+  static const _card  = Color(0xFF101827);
+  static const _ink   = Color(0xFFF8FAFC);
+  static const _muted = Color(0xFF94A3B8);
 
   Map<String, dynamic>? _gym;
   Map<String, dynamic>? _member;
@@ -83,7 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: _card,
         title: const Text('Log Out',
             style: TextStyle(color: _ink, fontWeight: FontWeight.w700)),
         content: Text('Are you sure you want to log out?',
@@ -120,7 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Divider(height: 1, color: Colors.grey.shade200),
+          child: Divider(height: 1, color: const Color(0xFF243244)),
         ),
       ),
       body: _loading
@@ -142,13 +142,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _actionTile(
                   icon: Icons.edit_outlined,
                   label: 'Edit Profile',
-                  color: const Color(0xFF7C3AED),
+                  color: const Color(0xFFB967FF),
                   onTap: _openEditProfile,
                 ),
                 _actionTile(
                   icon: Icons.feedback_outlined,
                   label: 'Send Feedback / Report Issue',
-                  color: const Color(0xFFD97706),
+                  color: const Color(0xFFFFD166),
                   onTap: () => Navigator.push(context, MaterialPageRoute(
                     builder: (_) => MemberFeedbackScreen(
                       memberId: widget.memberId,
@@ -213,8 +213,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final membership = _member?['membershipType'] as String? ?? 'Basic';
     final membershipColors = {
       'Basic':   _blue,
-      'Premium': const Color(0xFFD97706),
-      'VIP':     const Color(0xFF7C3AED),
+      'Premium': const Color(0xFFFFD166),
+      'VIP':     const Color(0xFFB967FF),
     };
     final color = membershipColors[membership] ?? _blue;
 
@@ -355,8 +355,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _membershipBadgeTile(String type) {
     final colors = {
       'Basic':   _blue,
-      'Premium': const Color(0xFFD97706),
-      'VIP':     const Color(0xFF7C3AED),
+      'Premium': const Color(0xFFFFD166),
+      'VIP':     const Color(0xFFB967FF),
     };
     final color = colors[type] ?? _blue;
     return Container(

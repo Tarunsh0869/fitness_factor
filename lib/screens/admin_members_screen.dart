@@ -14,13 +14,13 @@ class AdminMembersScreen extends StatefulWidget {
 }
 
 class _AdminMembersScreenState extends State<AdminMembersScreen> {
-  static const _blue  = Color(0xFF2563EB);
-  static const _green = Color(0xFF16A34A);
-  static const _red   = Color(0xFFEF4444);
-  static const _bg    = Color(0xFFF0F4FF);
-  static const _card  = Colors.white;
-  static const _ink   = Color(0xFF111827);
-  static const _muted = Color(0xFF6B7280);
+  static const _blue  = Color(0xFF00E5FF);
+  static const _green = Color(0xFF39FF14);
+  static const _red   = Color(0xFFFF2D75);
+  static const _bg    = Color(0xFF05070D);
+  static const _card  = Color(0xFF101827);
+  static const _ink   = Color(0xFFF8FAFC);
+  static const _muted = Color(0xFF94A3B8);
 
   List<Map<String, dynamic>> _all      = [];
   List<Map<String, dynamic>> _filtered = [];
@@ -81,15 +81,15 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
                 hintStyle: TextStyle(color: _muted.withOpacity(0.6)),
                 prefixIcon: const Icon(Icons.search, color: _blue, size: 20),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: _card,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(color: const Color(0xFF243244)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(color: const Color(0xFF243244)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -121,8 +121,8 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
 
     final membershipColors = {
       'Basic':   _blue,
-      'Premium': const Color(0xFFD97706),
-      'VIP':     const Color(0xFF7C3AED),
+      'Premium': const Color(0xFFFFD166),
+      'VIP':     const Color(0xFFB967FF),
     };
     final mColor = membershipColors[membership] ?? _blue;
 
@@ -148,7 +148,7 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
               decoration: BoxDecoration(
                 color: active
                     ? mColor.withOpacity(0.10)
-                    : Colors.grey.shade100,
+                    : const Color(0xFF1E293B),
                 shape: BoxShape.circle,
               ),
               child: Center(

@@ -15,13 +15,13 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  static const _blue   = Color(0xFF2563EB);
-  static const _blueDk = Color(0xFF1D4ED8);
-  static const _red    = Color(0xFFEF4444);
-  static const _bg     = Color(0xFFF0F4FF);
-  static const _card   = Colors.white;
-  static const _ink    = Color(0xFF111827);
-  static const _muted  = Color(0xFF6B7280);
+  static const _blue   = Color(0xFF00E5FF);
+  static const _blueDk = Color(0xFF7C3DFF);
+  static const _red    = Color(0xFFFF2D75);
+  static const _bg     = Color(0xFF05070D);
+  static const _card   = Color(0xFF101827);
+  static const _ink    = Color(0xFFF8FAFC);
+  static const _muted  = Color(0xFF94A3B8);
 
   final _formKey         = GlobalKey<FormState>();
   final _nameCtrl        = TextEditingController();
@@ -81,8 +81,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       firstDate: DateTime(1940),
       lastDate: DateTime.now().subtract(const Duration(days: 365 * 10)),
       builder: (ctx, child) => Theme(
-        data: ThemeData.light().copyWith(
-          colorScheme: const ColorScheme.light(primary: _blue),
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: _blue,
+            onPrimary: _bg,
+            surface: _card,
+            onSurface: _ink,
+          ),
+          dialogTheme: const DialogThemeData(backgroundColor: _card),
         ),
         child: child!,
       ),
@@ -250,7 +256,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 border: Border.all(
                                   color: _dob != null
                                       ? _blue.withOpacity(0.5)
-                                      : Colors.grey.shade200,
+                                      : const Color(0xFF243244),
                                 ),
                               ),
                               child: Row(
@@ -307,7 +313,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       color: sel ? _blue.withOpacity(0.08) : _card,
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: sel ? _blue : Colors.grey.shade200,
+                                        color: sel ? _blue : const Color(0xFF243244),
                                         width: sel ? 1.5 : 1,
                                       ),
                                     ),
@@ -421,12 +427,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
                                 borderSide:
-                                    BorderSide(color: Colors.grey.shade200),
+                                    BorderSide(color: const Color(0xFF243244)),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
                                 borderSide:
-                                    BorderSide(color: Colors.grey.shade200),
+                                    BorderSide(color: const Color(0xFF243244)),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -454,11 +460,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: Row(
                                 children: [
                                   const Icon(Icons.check_circle,
-                                      color: Color(0xFF16A34A), size: 14),
+                                      color: Color(0xFF39FF14), size: 14),
                                   const SizedBox(width: 6),
                                   Text(_maskAadhaar(_aadhaarCtrl.text),
                                       style: const TextStyle(
-                                        color: Color(0xFF16A34A), fontSize: 13,
+                                        color: Color(0xFF39FF14), fontSize: 13,
                                         letterSpacing: 1.5,
                                         fontWeight: FontWeight.w600,
                                       )),
@@ -582,11 +588,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             fillColor: _card,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: BorderSide(color: const Color(0xFF243244)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: BorderSide(color: const Color(0xFF243244)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -627,7 +633,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           color: sel ? _blue.withOpacity(0.06) : _card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: sel ? _blue : Colors.grey.shade200,
+            color: sel ? _blue : const Color(0xFF243244),
             width: sel ? 1.5 : 1,
           ),
         ),
@@ -636,7 +642,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Container(
               width: 42, height: 42,
               decoration: BoxDecoration(
-                color: sel ? _blue.withOpacity(0.12) : const Color(0xFFF3F4F6),
+                color: sel ? _blue.withOpacity(0.12) : const Color(0xFF1E293B),
                 borderRadius: BorderRadius.circular(11),
               ),
               child: Icon(d['icon'] as IconData,
@@ -668,7 +674,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 shape: BoxShape.circle,
                 color: sel ? _blue : Colors.transparent,
                 border: Border.all(
-                    color: sel ? _blue : Colors.grey.shade300, width: 2),
+                    color: sel ? _blue : const Color(0xFF334155), width: 2),
               ),
               child: sel
                   ? const Icon(Icons.check, color: Colors.white, size: 12)

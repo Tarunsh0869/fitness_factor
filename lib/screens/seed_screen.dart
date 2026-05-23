@@ -12,11 +12,11 @@ class SeedScreen extends StatefulWidget {
 }
 
 class _SeedScreenState extends State<SeedScreen> {
-  static const _blue   = Color(0xFF2563EB);
-  static const _blueDk = Color(0xFF1D4ED8);
-  static const _bg     = Color(0xFFF0F4FF);
-  static const _ink    = Color(0xFF111827);
-  static const _muted  = Color(0xFF6B7280);
+  static const _blue   = Color(0xFF00E5FF);
+  static const _blueDk = Color(0xFF7C3DFF);
+  static const _bg     = Color(0xFF05070D);
+  static const _ink    = Color(0xFFF8FAFC);
+  static const _muted  = Color(0xFF94A3B8);
 
   String _status = 'Setting up Firestore...';
   bool   _done   = false;

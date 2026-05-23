@@ -31,14 +31,15 @@ class ExitConfirmationSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const blue = Color(0xFF2563EB);
-    const red  = Color(0xFFEF4444);
-    const ink  = Color(0xFF111827);
-    const muted = Color(0xFF6B7280);
+    const blue = Color(0xFF00E5FF);
+    const red  = Color(0xFFFF2D75);
+    const ink  = Color(0xFFF8FAFC);
+    const muted = Color(0xFF94A3B8);
+    const surface = Color(0xFF101827);
 
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
@@ -48,7 +49,7 @@ class ExitConfirmationSheet extends StatelessWidget {
           Container(
             width: 40, height: 4,
             decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: const Color(0xFF334155),
                 borderRadius: BorderRadius.circular(2)),
           ),
           const SizedBox(height: 28),
@@ -79,7 +80,7 @@ class ExitConfirmationSheet extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                    colors: [Color(0xFFEF4444), Color(0xFFDC2626)]),
+                    colors: [Color(0xFFFF2D75), Color(0xFFDC2626)]),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(color: red.withOpacity(0.3),

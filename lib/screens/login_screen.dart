@@ -16,12 +16,13 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  static const _blue   = Color(0xFF2563EB);
-  static const _blueDk = Color(0xFF1D4ED8);
-  static const _bg     = Color(0xFFF0F4FF);
-  static const _ink    = Color(0xFF111827);
-  static const _muted  = Color(0xFF6B7280);
-  static const _red    = Color(0xFFEF4444);
+  static const _blue   = Color(0xFF00E5FF);
+  static const _blueDk = Color(0xFF7C3DFF);
+  static const _bg     = Color(0xFF05070D);
+  static const _card   = Color(0xFF101827);
+  static const _ink    = Color(0xFFF8FAFC);
+  static const _muted  = Color(0xFF94A3B8);
+  static const _red    = Color(0xFFFF2D75);
 
   final _phoneCtrl = TextEditingController();
   bool _loading = false;
@@ -116,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'Fitness Factor',
                     style: TextStyle(
                       color: _ink, fontSize: 34,
-                      fontWeight: FontWeight.w800, letterSpacing: -0.5,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -145,14 +146,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       hintStyle: TextStyle(color: _muted.withOpacity(0.5)),
                       prefixIcon: const Icon(Icons.phone_outlined, color: _blue),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: _card,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: Colors.grey.shade200),
+                        borderSide: BorderSide(color: const Color(0xFF243244)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: Colors.grey.shade200),
+                        borderSide: BorderSide(color: const Color(0xFF243244)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
