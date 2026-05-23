@@ -5,7 +5,7 @@ class AdminService {
   static final _db = FirebaseFirestore.instance;
   static FirebaseFirestore get db => _db;
 
-  // ── Member name cache (avoids N+1 reads) ─────────────────────────────────────
+  // â”€â”€ Member name cache (avoids N+1 reads) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   static final Map<String, String> _nameCache = {};
 
   static Future<String> _memberName(String memberId) async {
@@ -20,102 +20,7 @@ class AdminService {
 
   static void clearNameCache() => _nameCache.clear();
 
-  // ── Gym ───────────────────────────────────────────────────────────────────────
-
-  static Future<bool> verifyAdminPin(String gymId, String pin) async {
-    try {
-      final doc = await _db.collection('gyms').doc(gymId).get();
-      if (!doc.exists) return false;
-      final adminPins = List<String>.from(doc.data()?['adminPins'] ?? []);
-      return adminPins.contains(pin);
-    } catch (_) { return false; }
-  }
-
-  static Future<List<String>> getAdminPins(String gymId) async {
-    try {
-      final doc = await _db.collection('gyms').doc(gymId).get();
-      if (!doc.exists) return [];
-      return List<String>.from(doc.data()?['adminPins'] ?? []);
-    } catch (_) {
-      return [];
-    }
-  }
-
-  static Future<bool> addAdminPin(String gymId, String pin) async {
-    try {
-      final docRef = _db.collection('gyms').doc(gymId);
-      await _db.runTransaction((transaction) async {
-        final doc = await transaction.get(docRef);
-        if (!doc.exists) return false;
-        final adminPins = List<String>.from(doc.data()?['adminPins'] ?? []);
-        if (!adminPins.contains(pin)) {
-          adminPins.add(pin);
-          transaction.update(docRef, {'adminPins': adminPins});
-        }
-        return true;
-      });
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  static Future<bool> removeAdminPin(String gymId, String pin) async {
-    try {
-      final docRef = _db.collection('gyms').doc(gymId);
-      await _db.runTransaction((transaction) async {
-        final doc = await transaction.get(docRef);
-        if (!doc.exists) return false;
-        final adminPins = List<String>.from(doc.data()?['adminPins'] ?? []);
-        adminPins.removeWhere((p) => p == pin);
-        transaction.update(docRef, {'adminPins': adminPins});
-        return true;
-      });
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  static Future<Map<String, dynamic>?> getGymDetails(String gymId) async {
-    try {
-      final doc = await _db.collection('gyms').doc(gymId).get();
-      if (!doc.exists) return null;
-      return doc.data();
-    } catch (_) {
-      return null;
-    }
-  }
-
-  static Future<bool> updateGymSettings({
-    required String gymId,
-    required String name,
-    required double latitude,
-    required double longitude,
-    required int radiusMeters,
-    List<String>? adminPins,
-  }) async {
-    try {
-      final data = <String, dynamic>{
-        'name': name,
-        'latitude': latitude,
-        'longitude': longitude,
-        'radiusMeters': radiusMeters,
-      };
-      if (adminPins != null) {
-        data['adminPins'] = adminPins;
-      }
-      await _db.collection('gyms').doc(gymId).update(data);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-}
-
-  static void clearNameCache() => _nameCache.clear();
-
-  // ── Gym ───────────────────────────────────────────────────────────────────────
+  // â”€â”€ Gym â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static Future<bool> verifyAdminPin(String gymId, String pin) async {
     try {
@@ -207,7 +112,7 @@ class AdminService {
     }
   }
 
-  // ── Members ───────────────────────────────────────────────────────────────────
+  // â”€â”€ Members â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static Stream<List<Map<String, dynamic>>> membersStream(String gymId) {
     return _db
@@ -252,7 +157,7 @@ class AdminService {
     } catch (_) { return false; }
   }
 
-  // ── Attendance streams ────────────────────────────────────────────────────────
+  // â”€â”€ Attendance streams â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static Stream<List<Map<String, dynamic>>> insideNowStream(String gymId) {
     return _db
@@ -309,7 +214,7 @@ class AdminService {
     });
   }
 
-  // ── Day-wise attendance with stats ────────────────────────────────────────────
+  // â”€â”€ Day-wise attendance with stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static Future<Map<String, dynamic>> getDayAttendance(
       String gymId, DateTime date) async {
@@ -373,7 +278,7 @@ class AdminService {
     }
   }
 
-  // ── Member attendance with stats ──────────────────────────────────────────────
+  // â”€â”€ Member attendance with stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static Future<Map<String, dynamic>> getMemberAttendanceStats(
       String memberId, {int limit = 60}) async {
@@ -452,7 +357,7 @@ class AdminService {
     }
   }
 
-  // ── Gym-wide stats ────────────────────────────────────────────────────────────
+  // â”€â”€ Gym-wide stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static Future<Map<String, dynamic>> getGymStats(String gymId) async {
     try {
@@ -510,7 +415,7 @@ class AdminService {
     }
   }
 
-  // ── Occupancy (last 7 days daily counts) ──────────────────────────────────────
+  // â”€â”€ Occupancy (last 7 days daily counts) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static Future<List<int>> getWeeklyOccupancy(String gymId) async {
     try {
@@ -533,7 +438,7 @@ class AdminService {
     } catch (_) { return List<int>.filled(7, 0); }
   }
 
-  // ── Force checkout ────────────────────────────────────────────────────────────
+  // â”€â”€ Force checkout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static Future<void> forceCheckout(String sessionId) async {
     try {
@@ -543,7 +448,7 @@ class AdminService {
     } catch (_) {}
   }
 
-  // ── Feedback ──────────────────────────────────────────────────────────────────
+  // â”€â”€ Feedback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static Stream<List<Map<String, dynamic>>> feedbackStream(String gymId) {
     return _db
@@ -584,7 +489,7 @@ class AdminService {
     } catch (_) { return false; }
   }
 
-  // ── Verification queue ────────────────────────────────────────────────────────
+  // â”€â”€ Verification queue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static Stream<List<Map<String, dynamic>>> pendingVerificationStream(
       String gymId) {

@@ -39,7 +39,7 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
   Future<void> _load() async {
     final results = await Future.wait([
       AttendanceService.getMember(widget.memberId),
-      AdminService.getMemberAttendanceStats(widget.memberId),
+      AttendanceService.getStats(widget.memberId),
     ]);
     if (mounted) {
       setState(() {
