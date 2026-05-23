@@ -20,9 +20,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   static const _ink    = Color(0xFF111827);
   static const _muted  = Color(0xFF6B7280);
 
+  final _gymIdCtrl = TextEditingController();
   final _pin = <int>[];
   bool _loading = false;
   bool _error   = false;
+  String? _gymIdError;
 
   void _onKey(int digit) {
     if (_pin.length >= 4) return;
@@ -36,25 +38,36 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   }
 
   Future<void> _verify() async {
+    final gymId = _gymIdCtrl.text.trim();
+    if (gymId.isEmpty) {
+      setState(() => _gymIdError = 'Gym ID is required');
+      return;
+    }
     setState(() => _loading = true);
     final pinStr = _pin.join();
-    final ok = await AdminService.verifyAdminPin('gym_001', pinStr);
+    final ok = await AdminService.verifyAdminPin(gymId, pinStr);
     if (!mounted) return;
     setState(() => _loading = false);
     if (ok) {
       await AuthPrefs.save(
         memberId:   'admin',
         memberName: 'Admin',
-        gymId:      'gym_001',
+        gymId:      gymId,
         isAdmin:    true,
       );
       if (!mounted) return;
       Navigator.pushReplacement(context, MaterialPageRoute(
-        builder: (_) => const AdminDashboardScreen(gymId: 'gym_001'),
+        builder: (_) => AdminDashboardScreen(gymId: gymId),
       ));
     } else {
       setState(() { _pin.clear(); _error = true; });
     }
+  }
+
+  @override
+  void dispose() {
+    _gymIdCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -88,6 +101,44 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     color: Colors.white, size: 34),
               ),
               const SizedBox(height: 24),
+              
+              // Gym ID Input
+              TextFormField(
+                controller: _gymIdCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Gym ID',
+                  labelStyle: TextStyle(color: _muted),
+                  prefixIcon: const Icon(Icons.fitness_center, color: _blue),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: _blue, width: 1.5),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: _red, width: 1),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: _red, width: 1),
+                  ),
+                  errorText: _gymIdError,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                ),
+                style: const TextStyle(color: _ink, fontSize: 15),
+                validator: (v) => v!.trim().isEmpty ? 'Gym ID is required' : null,
+              ),
+              const SizedBox(height: 16),
+              
               const Text('Enter Admin PIN',
                   style: TextStyle(color: _ink, fontSize: 22,
                       fontWeight: FontWeight.w800)),

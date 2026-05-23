@@ -137,9 +137,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _startSessionTimer(DateTime start) {
+   void _startSessionTimer(DateTime start) {
     _sessionTimer?.cancel();
-    _sessionTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _sessionTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       if (mounted) setState(() => _elapsed = DateTime.now().difference(start));
     });
   }
@@ -160,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _fcmSub = FirebaseService.exitConfirmationStream().listen((_) {
       if (!mounted || _openSession == null) return;
       ExitConfirmationSheet.show(context,
-        sessionId: 0,
+        sessionId: _openSession!.id.isEmpty ? 0 : int.tryParse(_openSession!.id) ?? 0,
         onConfirm: _doCheckout,
         onDeny: () { _autoCheckoutTimer?.cancel(); setState(() => _isInsideGym = true); },
       );
@@ -188,14 +188,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final h = d.inHours;
     final m = d.inMinutes % 60;
     return h > 0 ? '${h}h ${m}m' : '${m}m';
-  }
-
-  @override
-  void dispose() {
-    _geoSub?.cancel(); _fcmSub?.cancel();
-    _sessionTimer?.cancel(); _autoCheckoutTimer?.cancel();
-    _sessionSub?.cancel(); _historySub?.cancel();
-    super.dispose();
   }
 
   @override
@@ -244,6 +236,17 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _geoSub?.cancel();
+    _fcmSub?.cancel();
+    _sessionTimer?.cancel();
+    _autoCheckoutTimer?.cancel();
+    _sessionSub?.cancel();
+    _historySub?.cancel();
+    super.dispose();
   }
 
   Widget _buildAppBar() {

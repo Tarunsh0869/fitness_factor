@@ -117,10 +117,10 @@ class UIEnhancementsDemo extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.2)),
+                border: Border.all(color: const Color(0xFF2563EB).withAlpha(51)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withAlpha(15),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -200,13 +200,13 @@ class UIEnhancementsDemo extends StatelessWidget {
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+        decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withAlpha(51)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha(10),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -218,7 +218,7 @@ class UIEnhancementsDemo extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withAlpha(26),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -230,8 +230,8 @@ class UIEnhancementsDemo extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    color: const Color(0xFF111827),
+                  style: const TextStyle(
+                    color: Color(0xFF111827),
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
@@ -239,8 +239,8 @@ class UIEnhancementsDemo extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(
-                    color: const Color(0xFF6B7280),
+                  style: const TextStyle(
+                    color: Color(0xFF6B7280),
                     fontSize: 13,
                   ),
                 ),
@@ -304,7 +304,7 @@ class UIEnhancementsDemo extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.3),
+                  color: color.withAlpha(77),
                   blurRadius: 6,
                   offset: const Offset(0, 3),
                 ),
@@ -322,7 +322,7 @@ class UIEnhancementsDemo extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           Text(
-            '#${color.value.toRadixString(16).substring(2).toUpperCase()}',
+            '#${(color.toARGB32() >> 16).toRadixString(16).toUpperCase()}',
             style: TextStyle(
               color: const Color(0xFF6B7280),
               fontSize: 10,

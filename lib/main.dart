@@ -10,6 +10,8 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/seed_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
+import 'screens/admin_login_screen.dart';
+import 'screens/admin_gym_registration_screen.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
@@ -76,8 +78,8 @@ class _AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('gyms').doc('gym_001').get(),
+    return FutureBuilder<QuerySnapshot>(
+      future: FirebaseFirestore.instance.collection('gyms').limit(1).get(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -87,7 +89,13 @@ class _AuthGate extends StatelessWidget {
             ),
           );
         }
-        if (!snap.hasData || !snap.data!.exists) return const SeedScreen();
+        
+        // If no gyms exist, show registration screen for first admin
+        if (!snap.hasData || snap.data!.docs.isEmpty) {
+          return const AdminGymRegistrationScreen();
+        }
+        
+        // If gyms exist, check auth state
         return const _AutoLoginGate();
       },
     );

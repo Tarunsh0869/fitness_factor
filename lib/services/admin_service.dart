@@ -3,6 +3,7 @@ import '../models/attendance_record.dart';
 
 class AdminService {
   static final _db = FirebaseFirestore.instance;
+  static FirebaseFirestore get db => _db;
 
   // ── Member name cache (avoids N+1 reads) ─────────────────────────────────────
   static final Map<String, String> _nameCache = {};
@@ -25,9 +26,65 @@ class AdminService {
     try {
       final doc = await _db.collection('gyms').doc(gymId).get();
       if (!doc.exists) return false;
-      final stored = doc.data()?['adminPin'] ?? '1234';
-      return stored == pin;
+      final adminPins = List<String>.from(doc.data()?['adminPins'] ?? []);
+      return adminPins.contains(pin);
     } catch (_) { return false; }
+  }
+
+  static Future<List<String>> getAdminPins(String gymId) async {
+    try {
+      final doc = await _db.collection('gyms').doc(gymId).get();
+      if (!doc.exists) return [];
+      return List<String>.from(doc.data()?['adminPins'] ?? []);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<bool> addAdminPin(String gymId, String pin) async {
+    try {
+      final docRef = _db.collection('gyms').doc(gymId);
+      await _db.runTransaction((transaction) async {
+        final doc = await transaction.get(docRef);
+        if (!doc.exists) return false;
+        final adminPins = List<String>.from(doc.data()?['adminPins'] ?? []);
+        if (!adminPins.contains(pin)) {
+          adminPins.add(pin);
+          transaction.update(docRef, {'adminPins': adminPins});
+        }
+        return true;
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> removeAdminPin(String gymId, String pin) async {
+    try {
+      final docRef = _db.collection('gyms').doc(gymId);
+      await _db.runTransaction((transaction) async {
+        final doc = await transaction.get(docRef);
+        if (!doc.exists) return false;
+        final adminPins = List<String>.from(doc.data()?['adminPins'] ?? []);
+        adminPins.removeWhere((p) => p == pin);
+        transaction.update(docRef, {'adminPins': adminPins});
+        return true;
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getGymDetails(String gymId) async {
+    try {
+      final doc = await _db.collection('gyms').doc(gymId).get();
+      if (!doc.exists) return null;
+      return doc.data();
+    } catch (_) {
+      return null;
+    }
   }
 
   static Future<bool> updateGymSettings({
@@ -36,17 +93,118 @@ class AdminService {
     required double latitude,
     required double longitude,
     required int radiusMeters,
-    String? newPin,
+    List<String>? adminPins,
   }) async {
     try {
       final data = <String, dynamic>{
-        'name': name, 'latitude': latitude,
-        'longitude': longitude, 'radiusMeters': radiusMeters,
+        'name': name,
+        'latitude': latitude,
+        'longitude': longitude,
+        'radiusMeters': radiusMeters,
       };
-      if (newPin != null && newPin.isNotEmpty) data['adminPin'] = newPin;
+      if (adminPins != null) {
+        data['adminPins'] = adminPins;
+      }
       await _db.collection('gyms').doc(gymId).update(data);
       return true;
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
+  static void clearNameCache() => _nameCache.clear();
+
+  // ── Gym ───────────────────────────────────────────────────────────────────────
+
+  static Future<bool> verifyAdminPin(String gymId, String pin) async {
+    try {
+      final doc = await _db.collection('gyms').doc(gymId).get();
+      if (!doc.exists) return false;
+      final adminPins = List<String>.from(doc.data()?['adminPins'] ?? []);
+      return adminPins.contains(pin);
     } catch (_) { return false; }
+  }
+
+  static Future<List<String>> getAdminPins(String gymId) async {
+    try {
+      final doc = await _db.collection('gyms').doc(gymId).get();
+      if (!doc.exists) return [];
+      return List<String>.from(doc.data()?['adminPins'] ?? []);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<bool> addAdminPin(String gymId, String pin) async {
+    try {
+      final docRef = _db.collection('gyms').doc(gymId);
+      await _db.runTransaction((transaction) async {
+        final doc = await transaction.get(docRef);
+        if (!doc.exists) return false;
+        final adminPins = List<String>.from(doc.data()?['adminPins'] ?? []);
+        if (!adminPins.contains(pin)) {
+          adminPins.add(pin);
+          transaction.update(docRef, {'adminPins': adminPins});
+        }
+        return true;
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> removeAdminPin(String gymId, String pin) async {
+    try {
+      final docRef = _db.collection('gyms').doc(gymId);
+      await _db.runTransaction((transaction) async {
+        final doc = await transaction.get(docRef);
+        if (!doc.exists) return false;
+        final adminPins = List<String>.from(doc.data()?['adminPins'] ?? []);
+        adminPins.removeWhere((p) => p == pin);
+        transaction.update(docRef, {'adminPins': adminPins});
+        return true;
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getGymDetails(String gymId) async {
+    try {
+      final doc = await _db.collection('gyms').doc(gymId).get();
+      if (!doc.exists) return null;
+      return doc.data();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<bool> updateGymSettings({
+    required String gymId,
+    required String name,
+    required double latitude,
+    required double longitude,
+    required int radiusMeters,
+    List<String>? adminPins,
+  }) async {
+    try {
+      final data = <String, dynamic>{
+        'name': name,
+        'latitude': latitude,
+        'longitude': longitude,
+        'radiusMeters': radiusMeters,
+      };
+      if (adminPins != null) {
+        data['adminPins'] = adminPins;
+      }
+      await _db.collection('gyms').doc(gymId).update(data);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   // ── Members ───────────────────────────────────────────────────────────────────

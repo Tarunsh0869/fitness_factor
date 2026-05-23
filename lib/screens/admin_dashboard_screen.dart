@@ -41,6 +41,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   List<Map<String, dynamic>> _insideNow = [];
   List<Map<String, dynamic>> _todayFeed = [];
   List<int> _weeklyOccupancy = List.filled(7, 0);
+  String _headerTime  = '';
+  String _headerDate  = '';
+  Timer? _clockTimer;
 
   StreamSubscription? _insideSub;
   StreamSubscription? _todaySub;
@@ -50,6 +53,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _updateClock();
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) => _updateClock());
     _loadAll();
     _statsTimer = Timer.periodic(const Duration(minutes: 2), (_) => _loadAll());
     _insideSub = AdminService.insideNowStream(widget.gymId).listen((list) {
@@ -57,6 +62,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     });
     _todaySub = AdminService.todayAttendanceStream(widget.gymId).listen((list) {
       if (mounted) setState(() => _todayFeed = list);
+    });
+  }
+
+  void _updateClock() {
+    final now = DateTime.now();
+    setState(() {
+      _headerTime = DateFormat('hh:mm:ss a').format(now);
+      _headerDate = DateFormat('EEE, MMM d · yyyy').format(now);
     });
   }
 
@@ -102,8 +115,112 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     if (confirm == true) await AdminService.forceCheckout(sessionId);
   }
 
+  void _showAlertPicker(BuildContext ctx, int pendingV, int openFeed) {
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 24),
+            const Text('Notifications',
+                style: TextStyle(color: _ink, fontSize: 20,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text('$pendingV pending · $openFeed open feedback',
+                style: const TextStyle(color: _muted, fontSize: 13)),
+            const SizedBox(height: 20),
+            _alertActionTile(
+              icon: Icons.verified_user_outlined, label: 'Verify Members',
+              subtitle: '$pendingV pending', color: _amber,
+              onTap: () => _navigateVerification(ctx, context),
+            ),
+            const SizedBox(height: 8),
+            _alertActionTile(
+              icon: Icons.feedback_outlined, label: 'Review Feedback',
+              subtitle: '$openFeed open', color: _blue,
+              onTap: () => _navigateFeedback(ctx, context),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateVerification(BuildContext from, BuildContext ctx) {
+    Navigator.pop(ctx);
+    Navigator.push(from, MaterialPageRoute(
+      builder: (_) => AdminVerificationScreen(gymId: widget.gymId),
+    ));
+  }
+
+  void _navigateFeedback(BuildContext from, BuildContext ctx) {
+    Navigator.pop(ctx);
+    Navigator.push(from, MaterialPageRoute(
+      builder: (_) => AdminFeedbackScreen(gymId: widget.gymId),
+    ));
+  }
+
+  Widget _alertActionTile({
+    required IconData icon, required String label,
+    required String subtitle, required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.15)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                    style: TextStyle(color: color, fontSize: 15,
+                        fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: const TextStyle(color: _muted, fontSize: 12)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_outlined,
+                color: color.withOpacity(0.5), size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    _clockTimer?.cancel();
     _insideSub?.cancel();
     _todaySub?.cancel();
     _statsTimer?.cancel();
@@ -185,8 +302,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               const Text('Admin Dashboard',
                   style: TextStyle(color: _ink, fontSize: 16,
                       fontWeight: FontWeight.w700)),
-              Text(DateFormat('EEE, MMM d').format(DateTime.now()),
-                  style: TextStyle(color: _muted, fontSize: 11)),
+              Row(
+                children: [
+                  Icon(Icons.access_time_outlined,
+                      color: _muted, size: 10),
+                  const SizedBox(width: 4),
+                  Text(_headerTime.isEmpty && _headerDate.isEmpty
+                      ? DateFormat('h:mm a').format(DateTime.now())
+                      : '$_headerTime · $_headerDate',
+                      style: const TextStyle(color: _muted, fontSize: 11)),
+                ],
+              ),
             ],
           ),
         ],
@@ -197,7 +323,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications_outlined, color: _muted),
-                onPressed: () {},
+                onPressed: () {
+                  final pendingV  = _stats['pendingVerify'] as int;
+                  final openFeed  = _stats['openFeedback'] as int;
+                  if (pendingV > 0 && openFeed > 0) {
+                    _showAlertPicker(context, pendingV, openFeed);
+                  } else if (pendingV > 0) {
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => AdminVerificationScreen(gymId: widget.gymId),
+                    ));
+                  } else {
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => AdminFeedbackScreen(gymId: widget.gymId),
+                    ));
+                  }
+                },
               ),
               Positioned(
                 right: 8, top: 8,

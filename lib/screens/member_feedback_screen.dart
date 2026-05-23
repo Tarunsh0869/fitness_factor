@@ -160,7 +160,16 @@ class _MemberFeedbackScreenState extends State<MemberFeedbackScreen> {
           TextField(
             controller: _msgCtrl,
             maxLines: 6,
+            maxLength: 500,
             style: const TextStyle(color: _ink, fontSize: 15),
+            buildCounter: (ctx, {required int currentLength, required int? maxLength, bool? isFocused}) {
+              final pct = maxLength != null ? (currentLength / maxLength * 100).round() : 0;
+              final color = pct > 90 ? const Color(0xFFEF4444) : pct > 70 ? const Color(0xFFD97706) : _muted;
+              return Text(
+                '$currentLength / ${maxLength ?? 500}',
+                style: TextStyle(color: color, fontSize: 12),
+              );
+            },
             decoration: InputDecoration(
               hintText: 'Describe your feedback or issue in detail...',
               hintStyle: TextStyle(color: _muted.withOpacity(0.5), fontSize: 14),
@@ -181,6 +190,13 @@ class _MemberFeedbackScreenState extends State<MemberFeedbackScreen> {
               contentPadding: const EdgeInsets.all(16),
             ),
           ),
+          const SizedBox(height: 8),
+          Row(children: [
+            const Icon(Icons.info_outline, color: _muted, size: 12),
+            const SizedBox(width: 6),
+            Text('For urgent issues, call the gym directly.',
+                style: const TextStyle(color: _muted, fontSize: 11)),
+          ]),
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity, height: 54,
