@@ -19,15 +19,15 @@ class AdminMemberDetailScreen extends StatefulWidget {
 }
 
 class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
-  static const _blue   = Color(0xFF2563EB);
-  static const _green  = Color(0xFF16A34A);
-  static const _red    = Color(0xFFEF4444);
-  static const _amber  = Color(0xFFD97706);
-  static const _bg     = Color(0xFFF0F4FF);
-  static const _card   = Colors.white;
-  static const _ink    = Color(0xFF111827);
-  static const _muted  = Color(0xFF6B7280);
-  static const _subtle = Color(0xFF9CA3AF);
+  static const _blue   = Color(0xFF00E5FF);
+  static const _green  = Color(0xFF39FF14);
+  static const _red    = Color(0xFFFF2D75);
+  static const _amber  = Color(0xFFFFD166);
+  static const _bg     = Color(0xFF05070D);
+  static const _card   = Color(0xFF101827);
+  static const _ink    = Color(0xFFF8FAFC);
+  static const _muted  = Color(0xFF94A3B8);
+  static const _subtle = Color(0xFF64748B);
 
   Map<String, dynamic>? _member;
   Map<String, dynamic>  _stats = {};
@@ -69,7 +69,7 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: _card,
         title: const Text('Delete Member',
             style: TextStyle(color: _ink, fontWeight: FontWeight.w700)),
         content: Text(
@@ -109,7 +109,7 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
         actions: [
           if (_member != null)
             PopupMenuButton<String>(
-              color: Colors.white,
+              color: _card,
               onSelected: (v) {
                 if (v == 'toggle') _toggleActive();
                 if (v == 'verify') _setVerification('verified');
@@ -186,7 +186,7 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
     final membershipColors = {
       'Basic':   _blue,
       'Premium': _amber,
-      'VIP':     const Color(0xFF7C3AED),
+      'VIP':     const Color(0xFFB967FF),
     };
     final color = membershipColors[membership] ?? _blue;
 
@@ -262,7 +262,7 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
+                color: const Color(0xFF1E293B),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -314,10 +314,10 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
           _statBox('Avg Session', avgMin == 0 ? '\u2014' : _fmtDur(avgMin), _amber),
           const SizedBox(width: 10),
           _statBox('Longest', maxMin == 0 ? '\u2014' : _fmtDur(maxMin),
-              const Color(0xFF7C3AED)),
+              const Color(0xFFB967FF)),
           const SizedBox(width: 10),
           _statBox('Total Hours', totalMin == 0 ? '\u2014' : _fmtDur(totalMin),
-              const Color(0xFF0891B2)),
+              const Color(0xFF00F5D4)),
         ]),
       ],
     );
@@ -352,7 +352,7 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
       ..sort((a, b) => b.value.compareTo(a.value));
     final total = sorted.fold<int>(0, (s, e) => s + e.value);
     final colors = [_blue, _green, _red, _amber,
-        const Color(0xFF7C3AED), const Color(0xFF0891B2)];
+        const Color(0xFFB967FF), const Color(0xFF00F5D4)];
 
     return Container(
       padding: const EdgeInsets.all(16),

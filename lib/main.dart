@@ -11,7 +11,10 @@ import 'services/auth_prefs.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
+<<<<<<< HEAD
 import 'screens/admin_gym_registration_screen.dart';
+=======
+>>>>>>> f5da398492595be0c1656973653d9ab8fe526987
 
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
@@ -20,12 +23,7 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-    systemNavigationBarColor: Colors.white,
-    systemNavigationBarIconBrightness: Brightness.dark,
-  ));
+  SystemChrome.setSystemUIOverlayStyle(AppTheme.overlayStyle);
 
   try {
     if (Firebase.apps.isEmpty) {
@@ -50,24 +48,7 @@ class FitnessFactorApp extends StatelessWidget {
     return MaterialApp(
       title: 'Fitness Factor',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2563EB),
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF0F4FF),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFF0F4FF),
-          foregroundColor: Color(0xFF111827),
-          elevation: 0,
-          systemOverlayStyle: SystemUiOverlayStyle(
-            statusBarIconBrightness: Brightness.dark,
-            statusBarColor: Colors.transparent,
-          ),
-        ),
-        cardColor: Colors.white,
-      ),
+      theme: AppTheme.theme,
       home: const _AuthGate(),
     );
   }
@@ -88,9 +69,9 @@ class _AuthGate extends StatelessWidget {
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            backgroundColor: Color(0xFFF0F4FF),
+            backgroundColor: AppTheme.background,
             body: Center(
-              child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+              child: CircularProgressIndicator(color: AppTheme.primary),
             ),
           );
         }
@@ -117,9 +98,9 @@ class _AutoLoginGate extends StatelessWidget {
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            backgroundColor: Color(0xFFF0F4FF),
+            backgroundColor: AppTheme.background,
             body: Center(
-              child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+              child: CircularProgressIndicator(color: AppTheme.primary),
             ),
           );
         }

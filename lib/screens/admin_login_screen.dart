@@ -13,12 +13,13 @@ class AdminLoginScreen extends StatefulWidget {
 }
 
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
-  static const _blue   = Color(0xFF2563EB);
-  static const _blueDk = Color(0xFF1D4ED8);
-  static const _red    = Color(0xFFEF4444);
-  static const _bg     = Color(0xFFF0F4FF);
-  static const _ink    = Color(0xFF111827);
-  static const _muted  = Color(0xFF6B7280);
+  static const _blue   = Color(0xFF00E5FF);
+  static const _blueDk = Color(0xFF7C3DFF);
+  static const _red    = Color(0xFFFF2D75);
+  static const _bg     = Color(0xFF05070D);
+  static const _card   = Color(0xFF101827);
+  static const _ink    = Color(0xFFF8FAFC);
+  static const _muted  = Color(0xFF94A3B8);
 
   final _gymIdCtrl = TextEditingController();
   final _pin = <int>[];
@@ -224,10 +225,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       child: Container(
         width: 72, height: 64,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: _card,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _blue.withOpacity(0.18)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.06),
+            BoxShadow(color: _blue.withOpacity(0.10),
                 blurRadius: 8, offset: const Offset(0, 2)),
           ],
         ),

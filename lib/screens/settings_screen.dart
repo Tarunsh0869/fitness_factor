@@ -27,12 +27,12 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  static const _blue  = Color(0xFF2563EB);
-  static const _red   = Color(0xFFEF4444);
-  static const _bg    = Color(0xFFF0F4FF);
-  static const _card  = Colors.white;
-  static const _ink   = Color(0xFF111827);
-  static const _muted = Color(0xFF6B7280);
+  static const _blue  = Color(0xFF00E5FF);
+  static const _red   = Color(0xFFFF2D75);
+  static const _bg    = Color(0xFF05070D);
+  static const _card  = Color(0xFF101827);
+  static const _ink   = Color(0xFFF8FAFC);
+  static const _muted = Color(0xFF94A3B8);
 
   Map<String, dynamic>? _member;
   bool _loading = true;
@@ -78,7 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: _card,
         title: const Text('Log Out',
             style: TextStyle(color: _ink, fontWeight: FontWeight.w700)),
         content: Text('Are you sure you want to log out?',
@@ -115,7 +115,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Divider(height: 1, color: Colors.grey.shade200),
+          child: Divider(height: 1, color: const Color(0xFF243244)),
         ),
       ),
       body: _loading
@@ -137,13 +137,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _actionTile(
                   icon: Icons.edit_outlined,
                   label: 'Edit Profile',
-                  color: const Color(0xFF7C3AED),
+                  color: const Color(0xFFB967FF),
                   onTap: _openEditProfile,
                 ),
                 _actionTile(
                   icon: Icons.feedback_outlined,
                   label: 'Send Feedback / Report Issue',
-                  color: const Color(0xFFD97706),
+                  color: const Color(0xFFFFD166),
                   onTap: () => Navigator.push(context, MaterialPageRoute(
                     builder: (_) => MemberFeedbackScreen(
                       memberId: widget.memberId,
@@ -173,7 +173,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildProfileCard() {
+<<<<<<< HEAD
     final name = _member?['name'] as String? ?? widget.memberName;
+=======
+    final name       = _member?['name']           as String? ?? widget.memberName;
+    final membership = _member?['membershipType'] as String? ?? 'Basic';
+    final membershipColors = {
+      'Basic':   _blue,
+      'Premium': const Color(0xFFFFD166),
+      'VIP':     const Color(0xFFB967FF),
+    };
+    final color = membershipColors[membership] ?? _blue;
+>>>>>>> f5da398492595be0c1656973653d9ab8fe526987
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -271,4 +282,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+<<<<<<< HEAD
+=======
+  Widget _infoTile(IconData icon, String label, String value) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03),
+            blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: _blue, size: 20),
+          const SizedBox(width: 12),
+          Text(label, style: TextStyle(color: _muted, fontSize: 14)),
+          const Spacer(),
+          Flexible(
+            child: Text(value,
+                textAlign: TextAlign.end,
+                style: const TextStyle(color: _ink, fontSize: 14,
+                    fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _membershipBadgeTile(String type) {
+    final colors = {
+      'Basic':   _blue,
+      'Premium': const Color(0xFFFFD166),
+      'VIP':     const Color(0xFFB967FF),
+    };
+    final color = colors[type] ?? _blue;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03),
+            blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.card_membership_outlined, color: color, size: 20),
+          const SizedBox(width: 12),
+          Text('Membership', style: TextStyle(color: _muted, fontSize: 14)),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(type,
+                style: TextStyle(color: color, fontSize: 13,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _radiusTile(int radius) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03),
+            blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.radar_outlined, color: _blue, size: 20),
+          const SizedBox(width: 12),
+          Text('Geofence Radius', style: TextStyle(color: _muted, fontSize: 14)),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: _blue.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text('${radius}m',
+                style: const TextStyle(color: _blue, fontSize: 13,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+>>>>>>> f5da398492595be0c1656973653d9ab8fe526987
 }

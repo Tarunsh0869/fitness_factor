@@ -21,17 +21,17 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  static const _blue   = Color(0xFF2563EB);
-  static const _blueDk = Color(0xFF1D4ED8);
-  static const _green  = Color(0xFF16A34A);
-  static const _red    = Color(0xFFEF4444);
-  static const _amber  = Color(0xFFD97706);
-  static const _purple = Color(0xFF7C3AED);
-  static const _bg     = Color(0xFFF0F4FF);
-  static const _card   = Colors.white;
-  static const _ink    = Color(0xFF111827);
-  static const _muted  = Color(0xFF6B7280);
-  static const _subtle = Color(0xFF9CA3AF);
+  static const _blue   = Color(0xFF00E5FF);
+  static const _blueDk = Color(0xFF7C3DFF);
+  static const _green  = Color(0xFF39FF14);
+  static const _red    = Color(0xFFFF2D75);
+  static const _amber  = Color(0xFFFFD166);
+  static const _purple = Color(0xFFB967FF);
+  static const _bg     = Color(0xFF05070D);
+  static const _card   = Color(0xFF101827);
+  static const _ink    = Color(0xFFF8FAFC);
+  static const _muted  = Color(0xFF94A3B8);
+  static const _subtle = Color(0xFF64748B);
 
   Map<String, dynamic> _stats = {
     'totalMembers': 0, 'insideNow': 0, 'todayVisits': 0,
@@ -98,7 +98,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: _card,
         title: const Text('Force Checkout',
             style: TextStyle(color: _ink, fontWeight: FontWeight.w700)),
         content: Text('Check out $name now?',
@@ -241,7 +241,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         child: RefreshIndicator(
           onRefresh: _loadAll,
           color: _blue,
-          backgroundColor: Colors.white,
+          backgroundColor: _card,
           child: CustomScrollView(
             slivers: [
               _buildAppBar(),
@@ -441,7 +441,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         Row(children: [
           Expanded(child: _statCard('This Month',
               '${_stats['monthVisits']}', Icons.calendar_month_outlined,
-              const Color(0xFF0891B2))),
+              const Color(0xFF00F5D4))),
           const SizedBox(width: 12),
           Expanded(child: _statCard('Pending Verify',
               '${_stats['pendingVerify']}', Icons.verified_user_outlined,
@@ -632,6 +632,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         const Text('Manage', style: TextStyle(color: _ink, fontSize: 16,
             fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
+<<<<<<< HEAD
         Column(
           children: List.generate(actions.length, (index) {
             final action = actions[index];
@@ -649,6 +650,39 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             );
           }),
         ),
+=======
+        Row(children: [
+          Expanded(child: _actionCard(Icons.people_outline, 'Members', _blue,
+              () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => AdminMembersScreen(gymId: widget.gymId))))),
+          const SizedBox(width: 10),
+          Expanded(child: _actionCard(Icons.fact_check_outlined, 'Attendance',
+              _purple, () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => AdminAttendanceScreen(gymId: widget.gymId))))),
+          const SizedBox(width: 10),
+          Expanded(child: _actionCard(Icons.verified_user_outlined, 'Verify',
+              _green, () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => AdminVerificationScreen(gymId: widget.gymId))),
+              badge: _stats['pendingVerify'] as int)),
+        ]),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(child: _actionCard(Icons.feedback_outlined, 'Feedback',
+              _amber, () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => AdminFeedbackScreen(gymId: widget.gymId))),
+              badge: _stats['openFeedback'] as int)),
+          const SizedBox(width: 10),
+          Expanded(child: _actionCard(Icons.settings_outlined, 'Gym Setup',
+              const Color(0xFF00F5D4), () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) =>
+                    AdminGymSettingsScreen(gymId: widget.gymId))))),
+          const SizedBox(width: 10),
+          Expanded(child: _actionCard(Icons.bar_chart_outlined, 'Reports',
+              const Color(0xFFB967FF), () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) =>
+                    AdminAttendanceScreen(gymId: widget.gymId))))),
+        ]),
+>>>>>>> f5da398492595be0c1656973653d9ab8fe526987
       ],
     );
   }
@@ -891,7 +925,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
-              color: isOpen ? _blue.withOpacity(0.10) : const Color(0xFFF3F4F6),
+              color: isOpen ? _blue.withOpacity(0.10) : const Color(0xFF1E293B),
               borderRadius: BorderRadius.circular(9),
             ),
             child: Icon(
