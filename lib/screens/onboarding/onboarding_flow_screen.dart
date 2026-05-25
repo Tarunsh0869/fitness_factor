@@ -1,0 +1,132 @@
+﻿import 'package:flutter/material.dart';
+import '../../widgets/onboarding_progress_bar.dart';
+import '../../widgets/primary_button.dart';
+import 'create_account_screen.dart';
+import 'equipment_screen.dart';
+import 'experience_screen.dart';
+import 'focus_area_screen.dart';
+import 'gender_screen.dart';
+import 'goals_screen.dart';
+import 'motivation_screen.dart';
+import 'onboarding_model.dart';
+import 'tracking_reason_screen.dart';
+import 'weight_screen.dart';
+import 'welcome_screen.dart';
+import 'workout_days_screen.dart';
+
+class OnboardingFlowScreen extends StatefulWidget {
+  const OnboardingFlowScreen({super.key});
+
+  @override
+  State<OnboardingFlowScreen> createState() => _OnboardingFlowScreenState();
+}
+
+class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
+  final OnboardingModel _model = OnboardingModel();
+
+  @override
+  void initState() {
+    super.initState();
+    _model.addListener(_refresh);
+  }
+
+  @override
+  void dispose() {
+    _model.removeListener(_refresh);
+    _model.dispose();
+    super.dispose();
+  }
+
+  void _refresh() => setState(() {});
+
+  void _continue() {
+    if (_model.step < OnboardingModel.totalSteps - 1) {
+      _model.nextStep();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_model.step == 0) {
+      return WelcomeScreen(onJoin: _continue);
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F8FB),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: _model.previousStep,
+                    icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFFB0B4BC)),
+                  ),
+                  Expanded(
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OnboardingProgressBar(progress: _model.progress),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 240),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  child: _contentByStep(),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: PrimaryButton(
+                label: _model.step == OnboardingModel.totalSteps - 1 ? 'Get started' : 'Continue',
+                enabled: _model.canContinue,
+                onTap: _continue,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _contentByStep() {
+    switch (_model.step) {
+      case 1:
+        return GenderScreen(key: const ValueKey(1), model: _model);
+      case 2:
+        return GoalsScreen(key: const ValueKey(2), model: _model);
+      case 3:
+        return FocusAreaScreen(key: const ValueKey(3), model: _model);
+      case 4:
+        return TrackingReasonScreen(key: const ValueKey(4), model: _model);
+      case 5:
+        return ExperienceScreen(key: const ValueKey(5), model: _model);
+      case 6:
+        return WorkoutDaysScreen(key: const ValueKey(6), model: _model);
+      case 7:
+        return EquipmentScreen(key: const ValueKey(7), model: _model);
+      case 8:
+        return WeightScreen(key: const ValueKey(8), model: _model);
+      case 9:
+        return const MotivationScreen(key: ValueKey(9), index: 0);
+      case 10:
+        return const MotivationScreen(key: ValueKey(10), index: 1);
+      case 11:
+        return const MotivationScreen(key: ValueKey(11), index: 2);
+      case 12:
+        return const CreateAccountScreen(key: ValueKey(12));
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+}

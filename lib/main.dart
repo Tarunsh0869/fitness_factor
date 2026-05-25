@@ -14,6 +14,7 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/admin_gym_registration_screen.dart';
+import 'screens/onboarding/onboarding_flow_screen.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
@@ -48,7 +49,7 @@ class FitnessFactorApp extends StatelessWidget {
       title: 'Fitness Factor',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
-      home: const _AuthGate(),
+      home: const OnboardingFlowScreen(),
     );
   }
 }
