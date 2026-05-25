@@ -97,6 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (confirm != true || !mounted) return;
+    await AttendanceService.logout();
     await AuthPrefs.clear();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(context,
@@ -173,18 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildProfileCard() {
-<<<<<<< HEAD
     final name = _member?['name'] as String? ?? widget.memberName;
-=======
-    final name       = _member?['name']           as String? ?? widget.memberName;
-    final membership = _member?['membershipType'] as String? ?? 'Basic';
-    final membershipColors = {
-      'Basic':   _blue,
-      'Premium': const Color(0xFFFFD166),
-      'VIP':     const Color(0xFFB967FF),
-    };
-    final color = membershipColors[membership] ?? _blue;
->>>>>>> f5da398492595be0c1656973653d9ab8fe526987
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -282,101 +272,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-<<<<<<< HEAD
-=======
-  Widget _infoTile(IconData icon, String label, String value) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03),
-            blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: _blue, size: 20),
-          const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: _muted, fontSize: 14)),
-          const Spacer(),
-          Flexible(
-            child: Text(value,
-                textAlign: TextAlign.end,
-                style: const TextStyle(color: _ink, fontSize: 14,
-                    fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _membershipBadgeTile(String type) {
-    final colors = {
-      'Basic':   _blue,
-      'Premium': const Color(0xFFFFD166),
-      'VIP':     const Color(0xFFB967FF),
-    };
-    final color = colors[type] ?? _blue;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03),
-            blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.card_membership_outlined, color: color, size: 20),
-          const SizedBox(width: 12),
-          Text('Membership', style: TextStyle(color: _muted, fontSize: 14)),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(type,
-                style: TextStyle(color: color, fontSize: 13,
-                    fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _radiusTile(int radius) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03),
-            blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.radar_outlined, color: _blue, size: 20),
-          const SizedBox(width: 12),
-          Text('Geofence Radius', style: TextStyle(color: _muted, fontSize: 14)),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _blue.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text('${radius}m',
-                style: const TextStyle(color: _blue, fontSize: 13,
-                    fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-  }
->>>>>>> f5da398492595be0c1656973653d9ab8fe526987
 }

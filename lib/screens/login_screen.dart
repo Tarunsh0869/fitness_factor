@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+﻿// ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
 import '../services/attendance_service.dart';
@@ -24,45 +24,87 @@ class _LoginScreenState extends State<LoginScreen> {
   static const _muted  = Color(0xFF94A3B8);
   static const _red    = Color(0xFFFF2D75);
 
-  final _phoneCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
   bool _loading = false;
+  bool _googleLoading = false;
+  bool _passwordObscured = true;
   String? _error;
 
   Future<void> _login() async {
-    final phone = _phoneCtrl.text.trim();
-    if (phone.isEmpty) return;
+    final email = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text;
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _error = 'Enter email and password.');
+      return;
+    }
+
     setState(() { _loading = true; _error = null; });
-    final result = await AttendanceService.login(phone);
+    final result = await AttendanceService.loginWithEmail(
+      email: email,
+      password: password,
+    );
     if (!mounted) return;
     setState(() => _loading = false);
+    await _handleAuthResult(result);
+  }
+
+  Future<void> _loginWithGoogle() async {
+    setState(() { _googleLoading = true; _error = null; });
+    final result = await AttendanceService.signInWithGoogle();
+    if (!mounted) return;
+    setState(() => _googleLoading = false);
+
+    if (result?['needsRegistration'] == true) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RegisterScreen(
+            initialEmail: result?['email'] as String? ?? '',
+            initialName: result?['name'] as String? ?? '',
+            useCurrentFirebaseUser: true,
+          ),
+        ),
+      );
+      return;
+    }
+
+    await _handleAuthResult(result);
+  }
+
+  Future<void> _handleAuthResult(Map<String, dynamic>? result) async {
+    if (!mounted) return;
     if (result != null && result.containsKey('error')) {
       setState(() => _error = result['error'] as String);
-    } else if (result != null) {
-      FirebaseService.setMemberId(result['memberId']);
-      await AuthPrefs.save(
+      return;
+    }
+    if (result == null) {
+      setState(() => _error = 'Login failed. Please try again.');
+      return;
+    }
+
+    FirebaseService.setMemberId(result['memberId']);
+    await AuthPrefs.save(
+      memberId:   result['memberId'],
+      memberName: result['name'],
+      gymId:      result['gymId'],
+    );
+    if (!mounted) return;
+    Navigator.pushReplacement(context, MaterialPageRoute(
+      builder: (_) => HomeScreen(
         memberId:   result['memberId'],
         memberName: result['name'],
         gymId:      result['gymId'],
-        jwtToken:   result['jwtToken'] as String?,
-        apiMemberId: result['apiMemberId'] as int?,
-        apiGymId:   result['apiGymId'] as int?,
-        jwtExpiresAt: result['jwtExpiresAt'] as DateTime?,
-      );
-      if (!mounted) return;
-      Navigator.pushReplacement(context, MaterialPageRoute(
-        builder: (_) => HomeScreen(
-          memberId:   result['memberId'],
-          memberName: result['name'],
-          gymId:      result['gymId'],
-        ),
-      ));
-    } else {
-      setState(() => _error = 'Phone number not found. Contact your gym.');
-    }
+      ),
+    ));
   }
 
   @override
-  void dispose() { _phoneCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +113,6 @@ class _LoginScreenState extends State<LoginScreen> {
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          // Decorative blobs
           Positioned(
             top: -60, right: -60,
             child: Container(
@@ -99,7 +140,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 64),
-                  // Logo
                   GestureDetector(
                     onLongPress: () => Navigator.push(context,
                         MaterialPageRoute(builder: (_) => const AdminLoginScreen())),
@@ -135,53 +175,60 @@ class _LoginScreenState extends State<LoginScreen> {
                     text: TextSpan(
                       style: const TextStyle(fontSize: 15, height: 1.6),
                       children: [
-                        TextSpan(text: 'Auto ', style: TextStyle(color: _muted)),
-                        const TextSpan(text: 'geo-attendance',
+                        TextSpan(text: 'Firebase ', style: TextStyle(color: _muted)),
+                        const TextSpan(text: 'secure login',
                             style: TextStyle(color: _blue, fontWeight: FontWeight.w600)),
-                        TextSpan(text: '.\nEnter your phone to get started.',
+                        TextSpan(text: '.\nUse email/password or Google to continue.',
                             style: TextStyle(color: _muted)),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 52),
-                  Text('Phone Number',
-                      style: TextStyle(color: _ink, fontSize: 13, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 44),
+                  _label('Email Address'),
                   const SizedBox(height: 8),
                   TextField(
-                    controller: _phoneCtrl,
-                    keyboardType: TextInputType.phone,
+                    controller: _emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
                     style: const TextStyle(color: _ink, fontSize: 16),
-                    decoration: InputDecoration(
-                      hintText: '+60 12-345 6789',
-                      hintStyle: TextStyle(color: _muted.withOpacity(0.5)),
-                      prefixIcon: const Icon(Icons.phone_outlined, color: _blue),
-                      filled: true,
-                      fillColor: _card,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: const Color(0xFF243244)),
+                    decoration: _inputDecoration(
+                      hint: 'member@example.com',
+                      icon: Icons.email_outlined,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _label('Password'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _passwordCtrl,
+                    obscureText: _passwordObscured,
+                    style: const TextStyle(color: _ink, fontSize: 16),
+                    decoration: _inputDecoration(
+                      hint: 'Enter password',
+                      icon: Icons.lock_outline,
+                      suffix: IconButton(
+                        icon: Icon(
+                          _passwordObscured
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: _muted,
+                        ),
+                        onPressed: () => setState(
+                            () => _passwordObscured = !_passwordObscured),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: const Color(0xFF243244)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: _blue, width: 1.5),
-                      ),
-                      errorText: _error,
-                      errorStyle: const TextStyle(color: _red),
                     ),
                     onSubmitted: (_) => _login(),
                   ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 10),
+                    Text(_error!, style: const TextStyle(color: _red, fontSize: 13)),
+                  ],
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity, height: 54,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [_blue, _blueDk],
-                        ),
+                        gradient: const LinearGradient(colors: [_blue, _blueDk]),
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
@@ -201,8 +248,26 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: _loading
                             ? const SizedBox(width: 22, height: 22,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                            : const Text('Continue',
+                            : const Text('Sign In',
                                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: OutlinedButton.icon(
+                      onPressed: _googleLoading ? null : _loginWithGoogle,
+                      icon: _googleLoading
+                          ? const SizedBox(width: 18, height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.g_mobiledata, size: 30),
+                      label: Text(_googleLoading ? 'Opening Google...' : 'Continue with Google'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _ink,
+                        side: const BorderSide(color: Color(0xFF243244)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                     ),
                   ),
@@ -227,6 +292,36 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _label(String label) => Text(label,
+      style: const TextStyle(color: _ink, fontSize: 13, fontWeight: FontWeight.w600));
+
+  InputDecoration _inputDecoration({
+    required String hint,
+    required IconData icon,
+    Widget? suffix,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: _muted.withOpacity(0.5)),
+      prefixIcon: Icon(icon, color: _blue),
+      suffixIcon: suffix,
+      filled: true,
+      fillColor: _card,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFF243244)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFF243244)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: _blue, width: 1.5),
       ),
     );
   }

@@ -632,7 +632,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         const Text('Manage', style: TextStyle(color: _ink, fontSize: 16,
             fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
-<<<<<<< HEAD
         Column(
           children: List.generate(actions.length, (index) {
             final action = actions[index];
@@ -650,39 +649,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             );
           }),
         ),
-=======
-        Row(children: [
-          Expanded(child: _actionCard(Icons.people_outline, 'Members', _blue,
-              () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => AdminMembersScreen(gymId: widget.gymId))))),
-          const SizedBox(width: 10),
-          Expanded(child: _actionCard(Icons.fact_check_outlined, 'Attendance',
-              _purple, () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => AdminAttendanceScreen(gymId: widget.gymId))))),
-          const SizedBox(width: 10),
-          Expanded(child: _actionCard(Icons.verified_user_outlined, 'Verify',
-              _green, () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => AdminVerificationScreen(gymId: widget.gymId))),
-              badge: _stats['pendingVerify'] as int)),
-        ]),
-        const SizedBox(height: 10),
-        Row(children: [
-          Expanded(child: _actionCard(Icons.feedback_outlined, 'Feedback',
-              _amber, () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => AdminFeedbackScreen(gymId: widget.gymId))),
-              badge: _stats['openFeedback'] as int)),
-          const SizedBox(width: 10),
-          Expanded(child: _actionCard(Icons.settings_outlined, 'Gym Setup',
-              const Color(0xFF00F5D4), () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) =>
-                    AdminGymSettingsScreen(gymId: widget.gymId))))),
-          const SizedBox(width: 10),
-          Expanded(child: _actionCard(Icons.bar_chart_outlined, 'Reports',
-              const Color(0xFFB967FF), () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) =>
-                    AdminAttendanceScreen(gymId: widget.gymId))))),
-        ]),
->>>>>>> f5da398492595be0c1656973653d9ab8fe526987
       ],
     );
   }

@@ -16,6 +16,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(m => m.Phone)
             .IsUnique();
 
+        modelBuilder.Entity<Member>()
+            .Property(m => m.CreatedAt)
+            .HasDefaultValueSql("GETUTCDATE()");
+
+        modelBuilder.Entity<Gym>()
+            .Property(g => g.Latitude)
+            .HasColumnType("decimal(10,8)");
+
+        modelBuilder.Entity<Gym>()
+            .Property(g => g.Longitude)
+            .HasColumnType("decimal(11,8)");
+
+        modelBuilder.Entity<Attendance>()
+            .Property(a => a.Source)
+            .HasDefaultValue("auto");
+
         // Fast lookup: open sessions per member
         modelBuilder.Entity<Attendance>()
             .HasIndex(a => new { a.MemberId, a.CheckedOut });

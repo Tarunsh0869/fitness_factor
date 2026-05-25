@@ -3,18 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'services/admin_service.dart';
 import 'services/biometric_auth_service.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_prefs.dart';
+import 'theme/app_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
-<<<<<<< HEAD
 import 'screens/admin_gym_registration_screen.dart';
-=======
->>>>>>> f5da398492595be0c1656973653d9ab8fe526987
 
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
@@ -109,10 +108,7 @@ class _AutoLoginGate extends StatelessWidget {
           if (saved['isAdmin'] == true) {
             return _BiometricSessionGate(saved: saved);
           }
-          final jwtToken = saved['jwtToken'] as String?;
-          final jwtExpiresAt = saved['jwtExpiresAt'] as DateTime?;
-          if (jwtToken == null ||
-              (jwtExpiresAt != null && jwtExpiresAt.isBefore(DateTime.now()))) {
+          if (FirebaseAuth.instance.currentUser == null) {
             AuthPrefs.clear();
             return const LoginScreen();
           }

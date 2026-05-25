@@ -170,6 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _onRefresh() => Future.wait([_loadMember(), _loadStats()]);
 
   Future<void> _logout() async {
+    await AttendanceService.logout();
     await AuthPrefs.clear();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(context,

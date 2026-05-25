@@ -9,7 +9,16 @@ import '../services/auth_prefs.dart';
 import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final String initialEmail;
+  final String initialName;
+  final bool useCurrentFirebaseUser;
+
+  const RegisterScreen({
+    super.key,
+    this.initialEmail = '',
+    this.initialName = '',
+    this.useCurrentFirebaseUser = false,
+  });
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -26,6 +35,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final _formKey         = GlobalKey<FormState>();
   final _nameCtrl        = TextEditingController();
+  final _emailCtrl       = TextEditingController();
+  final _passwordCtrl    = TextEditingController();
+  final _confirmPassCtrl = TextEditingController();
   final _phoneCtrl       = TextEditingController();
   final _emergencyCtrl   = TextEditingController();
   final _aadhaarCtrl     = TextEditingController();
@@ -35,6 +47,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String    _gender          = 'Male';
   DateTime? _dob;
   bool      _loading         = false;
+  bool      _googleLoading   = false;
+  bool      _usingGoogleAccount = false;
+  bool      _passwordObscured = true;
   bool      _aadhaarObscured = true;
   String?   _error;
 
@@ -42,8 +57,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _genders     = ['Male', 'Female', 'Other'];
 
   @override
+  void initState() {
+    super.initState();
+    _emailCtrl.text = widget.initialEmail;
+    _nameCtrl.text = widget.initialName;
+    _usingGoogleAccount = widget.useCurrentFirebaseUser;
+  }
+
+  @override
   void dispose() {
-    _nameCtrl.dispose(); _phoneCtrl.dispose();
+    _nameCtrl.dispose(); _emailCtrl.dispose();
+    _passwordCtrl.dispose(); _confirmPassCtrl.dispose();
+    _phoneCtrl.dispose();
     _emergencyCtrl.dispose(); _aadhaarCtrl.dispose();
     _aadhaarNameCtrl.dispose();
     super.dispose();
@@ -97,6 +122,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (picked != null) setState(() => _dob = picked);
   }
 
+  String? _validateEmail(String? value) {
+    final email = value?.trim() ?? '';
+    if (email.isEmpty) return 'Email is required';
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      return 'Enter a valid email';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (_usingGoogleAccount) return null;
+    final password = value ?? '';
+    if (password.length < 6) return 'Password must be at least 6 characters';
+    return null;
+  }
+
+  String? _validateConfirmPassword(String? value) {
+    if (_usingGoogleAccount) return null;
+    if (value != _passwordCtrl.text) return 'Passwords do not match';
+    return null;
+  }
+
+  Future<void> _useGoogleAccount() async {
+    setState(() { _googleLoading = true; _error = null; });
+    final result = await AttendanceService.signInWithGoogle();
+    if (!mounted) return;
+    setState(() => _googleLoading = false);
+
+    if (result == null) {
+      setState(() => _error = 'Google sign-in failed. Please try again.');
+      return;
+    }
+    if (result.containsKey('error')) {
+      setState(() => _error = result['error'] as String);
+      return;
+    }
+    if (result['needsRegistration'] == true) {
+      setState(() {
+        _usingGoogleAccount = true;
+        _emailCtrl.text = result['email'] as String? ?? '';
+        final name = result['name'] as String? ?? '';
+        if (_nameCtrl.text.trim().isEmpty) _nameCtrl.text = name;
+      });
+      return;
+    }
+
+    await _openHome(result);
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_dob == null) {
@@ -106,6 +180,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() { _loading = true; _error = null; });
 
     final result = await AttendanceService.register(
+      email:            _emailCtrl.text.trim(),
+      password:         _usingGoogleAccount ? null : _passwordCtrl.text,
+      useCurrentFirebaseUser: _usingGoogleAccount,
       name:             _nameCtrl.text.trim(),
       phone:            _phoneCtrl.text.trim(),
       emergencyContact: _emergencyCtrl.text.trim(),
@@ -125,15 +202,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    await _openHome(result);
+  }
+
+  Future<void> _openHome(Map<String, dynamic> result) async {
     FirebaseService.setMemberId(result['memberId']);
     await AuthPrefs.save(
       memberId:   result['memberId'],
       memberName: result['name'],
       gymId:      result['gymId'],
-      jwtToken:   result['jwtToken'] as String?,
-      apiMemberId: result['apiMemberId'] as int?,
-      apiGymId:   result['apiGymId'] as int?,
-      jwtExpiresAt: result['jwtExpiresAt'] as DateTime?,
     );
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
@@ -230,6 +307,100 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ],
                           ),
                           const SizedBox(height: 28),
+
+                          _sectionLabel('Account Access'),
+                          const SizedBox(height: 12),
+                          _field(
+                            controller: _emailCtrl,
+                            label: 'Email Address',
+                            hint: 'member@example.com',
+                            icon: Icons.email_outlined,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: _validateEmail,
+                          ),
+                          if (_usingGoogleAccount) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: _blue.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: _blue.withOpacity(0.18)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.g_mobiledata,
+                                      color: _blue, size: 30),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Google account selected. No password is needed.',
+                                      style: TextStyle(color: _muted, fontSize: 12),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => setState(
+                                        () => _usingGoogleAccount = false),
+                                    child: const Text('Use password'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
+                            const SizedBox(height: 12),
+                            _field(
+                              controller: _passwordCtrl,
+                              label: 'Password',
+                              hint: 'Minimum 6 characters',
+                              icon: Icons.lock_outline,
+                              obscureText: _passwordObscured,
+                              validator: _validatePassword,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _passwordObscured
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  color: _muted, size: 20,
+                                ),
+                                onPressed: () => setState(
+                                    () => _passwordObscured = !_passwordObscured),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _field(
+                              controller: _confirmPassCtrl,
+                              label: 'Confirm Password',
+                              hint: 'Repeat password',
+                              icon: Icons.lock_reset_outlined,
+                              obscureText: _passwordObscured,
+                              validator: _validateConfirmPassword,
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: OutlinedButton.icon(
+                                onPressed: _googleLoading ? null : _useGoogleAccount,
+                                icon: _googleLoading
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.g_mobiledata, size: 28),
+                                label: Text(_googleLoading
+                                    ? 'Opening Google...'
+                                    : 'Use Google Account'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: _ink,
+                                  side: const BorderSide(color: Color(0xFF243244)),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14)),
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 24),
 
                           _sectionLabel('Personal Information'),
                           const SizedBox(height: 12),
@@ -536,8 +707,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         child: CircularProgressIndicator(
                                             color: Colors.white,
                                             strokeWidth: 2.5))
-                                    : const Text('Create Account',
-                                        style: TextStyle(
+                                    : Text(_usingGoogleAccount
+                                        ? 'Complete Google Registration'
+                                        : 'Create Account',
+                                        style: const TextStyle(
                                             fontWeight: FontWeight.w700,
                                             fontSize: 16)),
                               ),
@@ -573,6 +746,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required String hint,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+    Widget? suffixIcon,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -583,12 +758,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          obscureText: obscureText,
           style: const TextStyle(color: _ink, fontSize: 15),
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(color: _muted.withOpacity(0.5)),
             prefixIcon: Icon(icon, color: _blue, size: 20),
+            suffixIcon: suffixIcon,
             filled: true,
             fillColor: _card,
             border: OutlineInputBorder(

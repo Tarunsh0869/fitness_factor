@@ -12,7 +12,20 @@
           "package_name": "com.example.fitness_factor"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "155808615108-mm7kbn3bsbqfmp1afoo7muh0r46mecuq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.fitness_factor",
+            "certificate_hash": "3dfcbad9eed52123ed17cb89b86c74b602c0604c"
+          }
+        },
+        {
+          "client_id": "155808615108-v5k7akkb20pjt8hguf593h6es21o7cg5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCAhoSDQFBqrDvrcauinnOcs6mGrze-3B4"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "155808615108-v5k7akkb20pjt8hguf593h6es21o7cg5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

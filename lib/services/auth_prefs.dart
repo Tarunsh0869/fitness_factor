@@ -36,7 +36,7 @@ class AuthPrefs {
         } else {
           await p.remove(_kJwtExpiresAt);
         }
-      } else if (isAdmin) {
+      } else {
         await p.remove(_kJwtToken);
         await p.remove(_kApiMemberId);
         await p.remove(_kApiGymId);

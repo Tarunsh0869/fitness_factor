@@ -1,48 +1,90 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import '../config/basic_gym.dart';
 import '../models/attendance_record.dart';
-import 'jwt_auth_service.dart';
 
 class AttendanceService {
   static final _db   = FirebaseFirestore.instance;
   static final _auth = FirebaseAuth.instance;
+  static const _googleServerClientId =
+      String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+  static bool _googleInitialized = false;
 
   // ── Auth ─────────────────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>?> login(String phone) async {
-    try {
-      final snap = await _db
-          .collection('members')
-          .where('phone', isEqualTo: phone)
-          .limit(1)
-          .get();
-      if (snap.docs.isEmpty) return null;
-      final doc = snap.docs.first;
-      final name = doc['name'] as String;
-      final jwt = await JwtAuthService.loginOrRegister(
-        phone: phone,
-        name: name,
-      );
-      if (jwt == null) {
-        return {
-          'error': 'Secure session failed. Start the API on port 5001 and try again.',
-        };
-      }
-      return {
-        'memberId': doc.id,
-        'name': name,
-        'gymId': doc['gymId'],
-        'jwtToken': jwt.token,
-        'apiMemberId': jwt.apiMemberId,
-        'apiGymId': jwt.apiGymId,
-        'jwtExpiresAt': jwt.expiresAt,
-      };
-    } catch (_) { return null; }
+    return {
+      'error': 'Use email/password or Google login.',
+    };
   }
 
-  static Future<void> logout() async { await _auth.signOut(); }
+  static Future<Map<String, dynamic>?> loginWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      final result = await _memberResultForUser(credential.user);
+      if (result == null) {
+        await _auth.signOut();
+        return {
+          'error': 'No member profile found for this account. Please register first.',
+        };
+      }
+      return result;
+    } on FirebaseAuthException catch (e) {
+      return {'error': _authError(e)};
+    } catch (e) {
+      return {'error': 'Login failed: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>?> signInWithGoogle() async {
+    try {
+      await _ensureGoogleInitialized();
+      if (!GoogleSignIn.instance.supportsAuthenticate()) {
+        return {'error': 'Google sign-in is not supported on this device.'};
+      }
+
+      final googleUser = await GoogleSignIn.instance.authenticate();
+      final googleAuth = googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+      final userCredential = await _auth.signInWithCredential(credential);
+      final result = await _memberResultForUser(userCredential.user);
+      if (result != null) return result;
+
+      final user = userCredential.user;
+      return {
+        'needsRegistration': true,
+        'email': user?.email ?? googleUser.email,
+        'name': user?.displayName ?? googleUser.displayName ?? '',
+      };
+    } on FirebaseAuthException catch (e) {
+      return {'error': _authError(e)};
+    } on GoogleSignInException catch (e) {
+      return {'error': _googleAuthError(e)};
+    } catch (e) {
+      return {'error': 'Google sign-in failed: $e'};
+    }
+  }
+
+  static Future<void> logout() async {
+    await _auth.signOut();
+    if (_googleInitialized) {
+      await GoogleSignIn.instance.signOut();
+    }
+  }
 
   static Future<Map<String, dynamic>?> register({
+    required String email,
+    String? password,
+    bool useCurrentFirebaseUser = false,
     required String name,
     required String phone,
     required String emergencyContact,
@@ -54,7 +96,11 @@ class AttendanceService {
     required String aadhaarName,
   }) async {
     try {
-      // Check phone not already registered
+      final normalizedEmail = email.trim().toLowerCase();
+      if (normalizedEmail.isEmpty) {
+        return {'error': 'Email is required.'};
+      }
+
       final existing = await _db
           .collection('members')
           .where('phone', isEqualTo: phone)
@@ -62,8 +108,41 @@ class AttendanceService {
           .get();
       if (existing.docs.isNotEmpty) return {'error': 'Phone already registered.'};
 
-      final ref = await _db.collection('members').add({
+      User? user;
+      String authProvider = 'password';
+
+      if (useCurrentFirebaseUser) {
+        user = _auth.currentUser;
+        if (user == null) {
+          return {'error': 'Google session expired. Please try Google again.'};
+        }
+        authProvider = user.providerData.isNotEmpty
+            ? user.providerData.first.providerId
+            : 'google.com';
+      } else {
+        final rawPassword = password ?? '';
+        if (rawPassword.length < 6) {
+          return {'error': 'Password must be at least 6 characters.'};
+        }
+        final credential = await _auth.createUserWithEmailAndPassword(
+          email: normalizedEmail,
+          password: rawPassword,
+        );
+        user = credential.user;
+        await user?.updateDisplayName(name);
+      }
+
+      if (user == null) return {'error': 'Could not create Firebase user.'};
+
+      final aadhaarDigits = aadhaarNumber.replaceAll(' ', '');
+      final aadhaarLast4 = aadhaarDigits.length >= 4
+          ? aadhaarDigits.substring(aadhaarDigits.length - 4)
+          : '';
+      final aadhaarMasked = aadhaarLast4.isEmpty ? '' : 'XXXX XXXX $aadhaarLast4';
+
+      await _db.collection('members').doc(user.uid).set({
         'name':               name,
+        'email':              user.email ?? normalizedEmail,
         'phone':              phone,
         'emergencyContact':   emergencyContact,
         'membershipType':     membershipType,
@@ -74,30 +153,80 @@ class AttendanceService {
         'createdAt':          FieldValue.serverTimestamp(),
         'active':             true,
         'verificationStatus': 'pending',
-        'aadhaarNumber':      aadhaarNumber,
+        'authUid':            user.uid,
+        'authProvider':       authProvider,
+        'aadhaarNumber':      aadhaarMasked,
+        'aadhaarLast4':       aadhaarLast4,
+        'aadhaarMasked':      aadhaarMasked,
         'aadhaarName':        aadhaarName,
-      });
-      final jwt = await JwtAuthService.loginOrRegister(
-        phone: phone,
-        name: name,
-      );
-      if (jwt == null) {
-        return {
-          'error': 'Member saved, but secure session failed. Start the API on port 5001 and log in again.',
-        };
-      }
+      }, SetOptions(merge: false));
+
       return {
-        'memberId': ref.id,
+        'memberId': user.uid,
         'name': name,
         'gymId': gymId,
-        'jwtToken': jwt.token,
-        'apiMemberId': jwt.apiMemberId,
-        'apiGymId': jwt.apiGymId,
-        'jwtExpiresAt': jwt.expiresAt,
       };
+    } on FirebaseAuthException catch (e) {
+      return {'error': _authError(e)};
     } catch (e) {
       return {'error': e.toString()};
     }
+  }
+
+  static Future<void> _ensureGoogleInitialized() async {
+    if (_googleInitialized) return;
+    await GoogleSignIn.instance.initialize(
+      serverClientId:
+          _googleServerClientId.isEmpty ? null : _googleServerClientId,
+    );
+    _googleInitialized = true;
+  }
+
+  static Future<Map<String, dynamic>?> _memberResultForUser(User? user) async {
+    if (user == null) return null;
+    final doc = await _db.collection('members').doc(user.uid).get();
+    if (!doc.exists) return null;
+    final data = doc.data() ?? {};
+    return {
+      'memberId': doc.id,
+      'name': data['name'] as String? ?? user.displayName ?? 'Member',
+      'gymId': data['gymId'] as String? ?? BasicGymConfig.gymId,
+      'email': data['email'] as String? ?? user.email ?? '',
+      'phone': data['phone'] as String? ?? '',
+    };
+  }
+
+  static String _authError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return 'Enter a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Invalid email or password.';
+      case 'email-already-in-use':
+        return 'This email is already registered. Please log in.';
+      case 'weak-password':
+        return 'Password is too weak. Use at least 6 characters.';
+      case 'account-exists-with-different-credential':
+        return 'This email already uses another sign-in method.';
+      default:
+        return e.message ?? 'Authentication failed.';
+    }
+  }
+
+  static String _googleAuthError(GoogleSignInException e) {
+    final message = e.description ?? e.toString();
+    if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
+        message.contains('serverClientId')) {
+      return 'Google sign-in needs Firebase OAuth setup. Add this Android app SHA in Firebase, download the new google-services.json, then rebuild.';
+    }
+    if (e.code == GoogleSignInExceptionCode.canceled) {
+      return 'Google sign-in was cancelled.';
+    }
+    return 'Google sign-in failed: $message';
   }
 
   // ── Member ───────────────────────────────────────────────────────────────────
