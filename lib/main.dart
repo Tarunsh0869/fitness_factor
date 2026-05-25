@@ -4,13 +4,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
+import 'services/admin_service.dart';
+import 'services/biometric_auth_service.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_prefs.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/seed_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
-import 'screens/admin_login_screen.dart';
 import 'screens/admin_gym_registration_screen.dart';
 
 @pragma('vm:entry-point')
@@ -76,10 +76,15 @@ class FitnessFactorApp extends StatelessWidget {
 class _AuthGate extends StatelessWidget {
   const _AuthGate();
 
+  Future<QuerySnapshot> _loadGyms() async {
+    await AdminService.ensureDefaultGym();
+    return FirebaseFirestore.instance.collection('gyms').limit(1).get();
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<QuerySnapshot>(
-      future: FirebaseFirestore.instance.collection('gyms').limit(1).get(),
+      future: _loadGyms(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -120,17 +125,71 @@ class _AutoLoginGate extends StatelessWidget {
         }
         final saved = snap.data;
         if (saved != null) {
-          FirebaseService.setMemberId(saved['memberId'] as String);
           if (saved['isAdmin'] == true) {
-            return AdminDashboardScreen(gymId: saved['gymId'] as String);
+            return _BiometricSessionGate(saved: saved);
           }
-          return HomeScreen(
-            memberId:   saved['memberId'] as String,
-            memberName: saved['memberName'] as String,
-            gymId:      saved['gymId'] as String,
-          );
+          final jwtToken = saved['jwtToken'] as String?;
+          final jwtExpiresAt = saved['jwtExpiresAt'] as DateTime?;
+          if (jwtToken == null ||
+              (jwtExpiresAt != null && jwtExpiresAt.isBefore(DateTime.now()))) {
+            AuthPrefs.clear();
+            return const LoginScreen();
+          }
+          return _BiometricSessionGate(saved: saved);
         }
         return const LoginScreen();
+      },
+    );
+  }
+}
+
+class _BiometricSessionGate extends StatefulWidget {
+  final Map<String, dynamic> saved;
+
+  const _BiometricSessionGate({required this.saved});
+
+  @override
+  State<_BiometricSessionGate> createState() => _BiometricSessionGateState();
+}
+
+class _BiometricSessionGateState extends State<_BiometricSessionGate> {
+  late final Future<bool> _unlockFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _unlockFuture = BiometricAuthService.authenticateForLogin();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _unlockFuture,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFF0F4FF),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+            ),
+          );
+        }
+
+        if (snap.data != true) {
+          return const LoginScreen();
+        }
+
+        final saved = widget.saved;
+        FirebaseService.setMemberId(saved['memberId'] as String);
+        if (saved['isAdmin'] == true) {
+          return AdminDashboardScreen(gymId: saved['gymId'] as String);
+        }
+
+        return HomeScreen(
+          memberId:   saved['memberId'] as String,
+          memberName: saved['memberName'] as String,
+          gymId:      saved['gymId'] as String,
+        );
       },
     );
   }

@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../config/basic_gym.dart';
 import '../models/attendance_record.dart';
 
 class AdminService {
   static final _db = FirebaseFirestore.instance;
   static FirebaseFirestore get db => _db;
+  static const defaultGymId = BasicGymConfig.gymId;
 
   // â”€â”€ Member name cache (avoids N+1 reads) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   static final Map<String, String> _nameCache = {};
@@ -22,12 +24,36 @@ class AdminService {
 
   // â”€â”€ Gym â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+  static String normalizeGymId(String gymId) {
+    final trimmed = gymId.trim();
+    return trimmed.toLowerCase() == BasicGymConfig.gymId
+        ? BasicGymConfig.gymId
+        : trimmed;
+  }
+
+  static Future<void> ensureDefaultGym() async {
+    await _db.collection('gyms').doc(BasicGymConfig.gymId).set({
+      'name': BasicGymConfig.name,
+      'latitude': BasicGymConfig.latitude,
+      'longitude': BasicGymConfig.longitude,
+      'radiusMeters': BasicGymConfig.radiusMeters,
+      'adminPins': FieldValue.arrayUnion([BasicGymConfig.adminPin]),
+    }, SetOptions(merge: true));
+  }
+
   static Future<bool> verifyAdminPin(String gymId, String pin) async {
     try {
-      final doc = await _db.collection('gyms').doc(gymId).get();
+      final normalizedGymId = normalizeGymId(gymId);
+      if (normalizedGymId == BasicGymConfig.gymId) {
+        await ensureDefaultGym();
+      }
+
+      final doc = await _db.collection('gyms').doc(normalizedGymId).get();
       if (!doc.exists) return false;
-      final adminPins = List<String>.from(doc.data()?['adminPins'] ?? []);
-      return adminPins.contains(pin);
+      final data = doc.data() ?? {};
+      final adminPins = List<String>.from(data['adminPins'] ?? []);
+      final legacyAdminPin = data['adminPin'] as String?;
+      return adminPins.contains(pin) || legacyAdminPin == pin;
     } catch (_) { return false; }
   }
 

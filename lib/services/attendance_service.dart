@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/attendance_record.dart';
+import 'jwt_auth_service.dart';
 
 class AttendanceService {
   static final _db   = FirebaseFirestore.instance;
@@ -17,7 +18,25 @@ class AttendanceService {
           .get();
       if (snap.docs.isEmpty) return null;
       final doc = snap.docs.first;
-      return {'memberId': doc.id, 'name': doc['name'], 'gymId': doc['gymId']};
+      final name = doc['name'] as String;
+      final jwt = await JwtAuthService.loginOrRegister(
+        phone: phone,
+        name: name,
+      );
+      if (jwt == null) {
+        return {
+          'error': 'Secure session failed. Start the API on port 5001 and try again.',
+        };
+      }
+      return {
+        'memberId': doc.id,
+        'name': name,
+        'gymId': doc['gymId'],
+        'jwtToken': jwt.token,
+        'apiMemberId': jwt.apiMemberId,
+        'apiGymId': jwt.apiGymId,
+        'jwtExpiresAt': jwt.expiresAt,
+      };
     } catch (_) { return null; }
   }
 
@@ -58,7 +77,24 @@ class AttendanceService {
         'aadhaarNumber':      aadhaarNumber,
         'aadhaarName':        aadhaarName,
       });
-      return {'memberId': ref.id, 'name': name, 'gymId': gymId};
+      final jwt = await JwtAuthService.loginOrRegister(
+        phone: phone,
+        name: name,
+      );
+      if (jwt == null) {
+        return {
+          'error': 'Member saved, but secure session failed. Start the API on port 5001 and log in again.',
+        };
+      }
+      return {
+        'memberId': ref.id,
+        'name': name,
+        'gymId': gymId,
+        'jwtToken': jwt.token,
+        'apiMemberId': jwt.apiMemberId,
+        'apiGymId': jwt.apiGymId,
+        'jwtExpiresAt': jwt.expiresAt,
+      };
     } catch (e) {
       return {'error': e.toString()};
     }

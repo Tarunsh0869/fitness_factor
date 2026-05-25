@@ -38,7 +38,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   }
 
   Future<void> _verify() async {
-    final gymId = _gymIdCtrl.text.trim();
+    final gymId = AdminService.normalizeGymId(_gymIdCtrl.text);
     if (gymId.isEmpty) {
       setState(() => _gymIdError = 'Gym ID is required');
       return;

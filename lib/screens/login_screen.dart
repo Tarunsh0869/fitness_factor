@@ -34,12 +34,18 @@ class _LoginScreenState extends State<LoginScreen> {
     final result = await AttendanceService.login(phone);
     if (!mounted) return;
     setState(() => _loading = false);
-    if (result != null) {
+    if (result != null && result.containsKey('error')) {
+      setState(() => _error = result['error'] as String);
+    } else if (result != null) {
       FirebaseService.setMemberId(result['memberId']);
       await AuthPrefs.save(
         memberId:   result['memberId'],
         memberName: result['name'],
         gymId:      result['gymId'],
+        jwtToken:   result['jwtToken'] as String?,
+        apiMemberId: result['apiMemberId'] as int?,
+        apiGymId:   result['apiGymId'] as int?,
+        jwtExpiresAt: result['jwtExpiresAt'] as DateTime?,
       );
       if (!mounted) return;
       Navigator.pushReplacement(context, MaterialPageRoute(
@@ -93,23 +99,27 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const SizedBox(height: 64),
                   // Logo
-                  Container(
-                    width: 64, height: 64,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [_blue, _blueDk],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _blue.withOpacity(0.3),
-                          blurRadius: 20, offset: const Offset(0, 8),
+                  GestureDetector(
+                    onLongPress: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const AdminLoginScreen())),
+                    child: Container(
+                      width: 64, height: 64,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [_blue, _blueDk],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      ],
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _blue.withOpacity(0.3),
+                            blurRadius: 20, offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.fitness_center, color: Colors.white, size: 30),
                     ),
-                    child: const Icon(Icons.fitness_center, color: Colors.white, size: 30),
                   ),
                   const SizedBox(height: 28),
                   const Text(
@@ -209,22 +219,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             )),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const AdminLoginScreen())),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.admin_panel_settings_outlined,
-                            color: _muted, size: 14),
-                        const SizedBox(width: 5),
-                        Text('Admin Access',
-                            style: TextStyle(color: _muted, fontSize: 13,
-                                fontWeight: FontWeight.w600)),
-                      ],
-                    ),
                   ),
                   const SizedBox(height: 32),
                 ],

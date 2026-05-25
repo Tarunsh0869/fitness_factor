@@ -573,43 +573,82 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _buildQuickActions() {
+    final actions = [
+      _DashboardAction(
+        icon: Icons.people_outline,
+        label: 'Members',
+        color: _blue,
+        onTap: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => AdminMembersScreen(gymId: widget.gymId),
+        )),
+      ),
+      _DashboardAction(
+        icon: Icons.fact_check_outlined,
+        label: 'Attendance',
+        color: _purple,
+        onTap: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => AdminAttendanceScreen(gymId: widget.gymId),
+        )),
+      ),
+      _DashboardAction(
+        icon: Icons.verified_user_outlined,
+        label: 'Verify',
+        color: _green,
+        badge: _stats['pendingVerify'] as int,
+        onTap: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => AdminVerificationScreen(gymId: widget.gymId),
+        )),
+      ),
+      _DashboardAction(
+        icon: Icons.feedback_outlined,
+        label: 'Feedback',
+        color: _amber,
+        badge: _stats['openFeedback'] as int,
+        onTap: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => AdminFeedbackScreen(gymId: widget.gymId),
+        )),
+      ),
+      _DashboardAction(
+        icon: Icons.settings_outlined,
+        label: 'Gym Setup',
+        color: const Color(0xFF0891B2),
+        onTap: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => AdminGymSettingsScreen(gymId: widget.gymId),
+        )),
+      ),
+      _DashboardAction(
+        icon: Icons.bar_chart_outlined,
+        label: 'Reports',
+        color: _purple,
+        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reports feature coming soon')),
+        ),
+      ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Manage', style: TextStyle(color: _ink, fontSize: 16,
             fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
-        Row(children: [
-          Expanded(child: _actionCard(Icons.people_outline, 'Members', _blue,
-              () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => AdminMembersScreen(gymId: widget.gymId))))),
-          const SizedBox(width: 10),
-          Expanded(child: _actionCard(Icons.fact_check_outlined, 'Attendance',
-              _purple, () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => AdminAttendanceScreen(gymId: widget.gymId))))),
-          const SizedBox(width: 10),
-          Expanded(child: _actionCard(Icons.verified_user_outlined, 'Verify',
-              _green, () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => AdminVerificationScreen(gymId: widget.gymId))),
-              badge: _stats['pendingVerify'] as int)),
-        ]),
-        const SizedBox(height: 10),
-        Row(children: [
-          Expanded(child: _actionCard(Icons.feedback_outlined, 'Feedback',
-              _amber, () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => AdminFeedbackScreen(gymId: widget.gymId))),
-              badge: _stats['openFeedback'] as int)),
-          const SizedBox(width: 10),
-          Expanded(child: _actionCard(Icons.settings_outlined, 'Gym Setup',
-              const Color(0xFF0891B2), () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) =>
-                    AdminGymSettingsScreen(gymId: widget.gymId))))),
-          const SizedBox(width: 10),
-          Expanded(child: _actionCard(Icons.bar_chart_outlined, 'Reports',
-              const Color(0xFF7C3AED), () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) =>
-                    AdminAttendanceScreen(gymId: widget.gymId))))),
-        ]),
+        Column(
+          children: List.generate(actions.length, (index) {
+            final action = actions[index];
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: index == actions.length - 1 ? 0 : 10,
+              ),
+              child: _actionCard(
+                action.icon,
+                action.label,
+                action.color,
+                action.onTap,
+                badge: action.badge,
+              ),
+            );
+          }),
+        ),
       ],
     );
   }
@@ -618,49 +657,63 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       VoidCallback onTap, {int badge = 0}) {
     return GestureDetector(
       onTap: onTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              color: _card,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: color.withOpacity(0.15)),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04),
-                  blurRadius: 8, offset: const Offset(0, 2))],
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 62),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.16)),
+          boxShadow: [BoxShadow(color: color.withOpacity(0.07),
+              blurRadius: 12, offset: const Offset(0, 4))],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42, height: 42,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 21),
             ),
-            child: Column(
-              children: [
-                Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Icon(icon, color: color, size: 20),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: _ink, fontSize: 14,
+                    fontWeight: FontWeight.w800),
+              ),
+            ),
+            if (badge > 0) ...[
+              Container(
+                constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                padding: const EdgeInsets.symmetric(horizontal: 7),
+                decoration: BoxDecoration(
+                  color: _red,
+                  borderRadius: BorderRadius.circular(11),
                 ),
-                const SizedBox(height: 7),
-                Text(label, style: TextStyle(color: _ink, fontSize: 11,
-                    fontWeight: FontWeight.w600)),
-              ],
-            ),
-          ),
-          if (badge > 0)
-            Positioned(
-              right: -4, top: -4,
-              child: Container(
-                width: 18, height: 18,
-                decoration: const BoxDecoration(
-                    color: _red, shape: BoxShape.circle),
                 child: Center(
                   child: Text('$badge',
                       style: const TextStyle(color: Colors.white,
-                          fontSize: 9, fontWeight: FontWeight.w800)),
+                          fontSize: 10, fontWeight: FontWeight.w800)),
                 ),
               ),
+              const SizedBox(width: 8),
+            ],
+            Container(
+              width: 30, height: 30,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(Icons.chevron_right_outlined,
+                  color: color, size: 19),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -889,4 +942,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           style: TextStyle(color: _subtle, fontSize: 13))),
     );
   }
+}
+
+class _DashboardAction {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  final int badge;
+
+  const _DashboardAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.badge = 0,
+  });
 }

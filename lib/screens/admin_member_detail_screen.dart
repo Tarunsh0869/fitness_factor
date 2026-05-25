@@ -166,8 +166,6 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
                 const SizedBox(height: 16),
                 _buildStatsRow(),
                 const SizedBox(height: 16),
-                _buildInfoCard(),
-                const SizedBox(height: 16),
                 if ((_stats['typeCount'] as Map).isNotEmpty) ...[
                   _buildWorkoutBreakdown(),
                   const SizedBox(height: 16),
@@ -344,40 +342,6 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
                 style: TextStyle(color: _muted, fontSize: 10)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoCard() {
-    final fields = {
-      'Gender':     _member?['gender']           as String? ?? '—',
-      'Emergency':  _member?['emergencyContact'] as String? ?? '—',
-      'Joined':     _member?['createdAt'] != null
-          ? DateFormat('MMM d, yyyy').format(
-              DateTime.tryParse(_member!['createdAt'].toString()) ??
-              DateTime.now())
-          : '—',
-      'Member ID':  widget.memberId,
-    };
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _card, borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04),
-            blurRadius: 10, offset: const Offset(0, 3))],
-      ),
-      child: Column(
-        children: fields.entries.map((e) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 7),
-          child: Row(
-            children: [
-              Text(e.key, style: TextStyle(color: _muted, fontSize: 13)),
-              const Spacer(),
-              Text(e.value, style: const TextStyle(color: _ink, fontSize: 13,
-                  fontWeight: FontWeight.w600)),
-            ],
-          ),
-        )).toList(),
       ),
     );
   }

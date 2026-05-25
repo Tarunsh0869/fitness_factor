@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../config/basic_gym.dart';
 import '../services/attendance_service.dart';
 import '../services/firebase_service.dart';
 import '../services/auth_prefs.dart';
@@ -105,7 +106,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       membershipType:   _membershipType,
       gender:           _gender,
       dateOfBirth:      _dob!,
-      gymId:            'gym_001',
+      gymId:            BasicGymConfig.gymId,
       aadhaarNumber:    _aadhaarCtrl.text.replaceAll(' ', ''),
       aadhaarName:      _aadhaarNameCtrl.text.trim(),
     );
@@ -123,6 +124,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       memberId:   result['memberId'],
       memberName: result['name'],
       gymId:      result['gymId'],
+      jwtToken:   result['jwtToken'] as String?,
+      apiMemberId: result['apiMemberId'] as int?,
+      apiGymId:   result['apiGymId'] as int?,
+      jwtExpiresAt: result['jwtExpiresAt'] as DateTime?,
     );
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(

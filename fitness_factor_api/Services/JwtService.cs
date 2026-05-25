@@ -16,7 +16,7 @@ public class JwtService(IConfiguration config)
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, member.Id.ToString()),
-            new Claim(ClaimTypes.MobilePhone,    member.Name),
+            new Claim(ClaimTypes.MobilePhone,    member.Phone),
             new Claim(ClaimTypes.Name,           member.Name),
         };
 

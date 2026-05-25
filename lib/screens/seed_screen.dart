@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../config/basic_gym.dart';
 import 'login_screen.dart';
 
 class SeedScreen extends StatefulWidget {
@@ -27,12 +28,12 @@ class _SeedScreenState extends State<SeedScreen> {
   Future<void> _seed() async {
     final db = FirebaseFirestore.instance;
     try {
-      await db.collection('gyms').doc('gym_001').set({
-        'name': 'Fitness Factor HQ',
-        'latitude': 3.1390,
-        'longitude': 101.6869,
-        'radiusMeters': 50,
-        'adminPin': '1234',
+      await db.collection('gyms').doc(BasicGymConfig.gymId).set({
+        'name': BasicGymConfig.name,
+        'latitude': BasicGymConfig.latitude,
+        'longitude': BasicGymConfig.longitude,
+        'radiusMeters': BasicGymConfig.radiusMeters,
+        'adminPins': [BasicGymConfig.adminPin],
       }, SetOptions(merge: true));
 
       setState(() => _status = '✓ Gym configured');
@@ -40,7 +41,7 @@ class _SeedScreenState extends State<SeedScreen> {
       await db.collection('members').doc('member_001').set({
         'name': 'Test Member',
         'phone': '+60123456789',
-        'gymId': 'gym_001',
+        'gymId': BasicGymConfig.gymId,
         'fcmToken': '',
         'emergencyContact': '+60123456780',
         'membershipType': 'Basic',
@@ -143,8 +144,11 @@ class _SeedScreenState extends State<SeedScreen> {
                           _credRow(Icons.person_outline, 'Member Login',
                               '+60123456789'),
                           const SizedBox(height: 10),
+                          _credRow(Icons.fitness_center, 'Gym ID',
+                              BasicGymConfig.gymId),
+                          const SizedBox(height: 10),
                           _credRow(Icons.admin_panel_settings_outlined, 'Admin PIN',
-                              '1234'),
+                              BasicGymConfig.adminPin),
                           const SizedBox(height: 20),
                           SizedBox(
                             width: double.infinity, height: 52,
