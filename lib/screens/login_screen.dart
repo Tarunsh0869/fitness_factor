@@ -1,4 +1,4 @@
-﻿// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
 import '../services/attendance_service.dart';
@@ -41,7 +41,10 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     final result = await AttendanceService.loginWithEmail(
       email: email,
       password: password,
@@ -52,7 +55,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loginWithGoogle() async {
-    setState(() { _googleLoading = true; _error = null; });
+    setState(() {
+      _googleLoading = true;
+      _error = null;
+    });
     final result = await AttendanceService.signInWithGoogle();
     if (!mounted) return;
     setState(() => _googleLoading = false);
@@ -87,18 +93,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
     FirebaseService.setMemberId(result['memberId']);
     await AuthPrefs.save(
-      memberId:   result['memberId'],
+      memberId: result['memberId'],
       memberName: result['name'],
-      gymId:      result['gymId'],
+      gymId: result['gymId'],
     );
     if (!mounted) return;
-    Navigator.pushReplacement(context, MaterialPageRoute(
-      builder: (_) => HomeScreen(
-        memberId:   result['memberId'],
-        memberName: result['name'],
-        gymId:      result['gymId'],
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(
+          memberId: result['memberId'],
+          memberName: result['name'],
+          gymId: result['gymId'],
+        ),
       ),
-    ));
+    );
   }
 
   @override
@@ -116,9 +125,11 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         children: [
           Positioned(
-            top: -60, right: -60,
+            top: -60,
+            right: -60,
             child: Container(
-              width: 240, height: 240,
+              width: 240,
+              height: 240,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _blue.withOpacity(0.10),
@@ -126,9 +137,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           Positioned(
-            bottom: 40, left: -80,
+            bottom: 40,
+            left: -80,
             child: Container(
-              width: 200, height: 200,
+              width: 200,
+              height: 200,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _blue.withOpacity(0.06),
@@ -144,8 +157,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 64),
                   Center(
                     child: GestureDetector(
-                      onLongPress: () => Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => const AdminLoginScreen())),
+                      onLongPress: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AdminLoginScreen(),
+                        ),
+                      ),
                       child: const FitnessFactorLogo(size: 96),
                     ),
                   ),
@@ -153,7 +170,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Text(
                     'Fitness Factor',
                     style: TextStyle(
-                      color: _ink, fontSize: 34,
+                      color: _ink,
+                      fontSize: 34,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -164,7 +182,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         const TextSpan(
                           text: 'Welcome back to Fitness Factor',
-                          style: TextStyle(color: _blue, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: _blue,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         TextSpan(
                           text: '.\nUse email/password or Google to continue.',
@@ -204,26 +225,34 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: _muted,
                         ),
                         onPressed: () => setState(
-                            () => _passwordObscured = !_passwordObscured),
+                          () => _passwordObscured = !_passwordObscured,
+                        ),
                       ),
                     ),
                     onSubmitted: (_) => _login(),
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 10),
-                    Text(_error!, style: const TextStyle(color: _red, fontSize: 13)),
+                    Text(
+                      _error!,
+                      style: const TextStyle(color: _red, fontSize: 13),
+                    ),
                   ],
                   const SizedBox(height: 24),
                   SizedBox(
-                    width: double.infinity, height: 54,
+                    width: double.infinity,
+                    height: 54,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [_blue, _blueDk]),
-                        borderRadius: BorderRadius.circular(14),
+                        gradient: const LinearGradient(
+                          colors: [_blue, _blueDk],
+                        ),
+                        borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
                             color: _blue.withOpacity(0.35),
-                            blurRadius: 16, offset: const Offset(0, 6),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
@@ -233,13 +262,26 @@ class _LoginScreenState extends State<LoginScreen> {
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
                         ),
                         child: _loading
-                            ? const SizedBox(width: 22, height: 22,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                            : const Text('Sign In',
-                                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                            : const Text(
+                                'Sign In',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -250,14 +292,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _googleLoading ? null : _loginWithGoogle,
                       icon: _googleLoading
-                          ? const SizedBox(width: 18, height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : const Icon(Icons.g_mobiledata, size: 30),
-                      label: Text(_googleLoading ? 'Opening Google...' : 'Continue with Google'),
+                      label: Text(
+                        _googleLoading
+                            ? 'Opening Google...'
+                            : 'Continue with Google',
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: _ink,
                         side: const BorderSide(color: _outline),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
                       ),
                     ),
                   ),
@@ -265,14 +316,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('New member? ', style: TextStyle(color: _muted, fontSize: 14)),
+                      Text(
+                        'New member? ',
+                        style: TextStyle(color: _muted, fontSize: 14),
+                      ),
                       GestureDetector(
-                        onTap: () => Navigator.push(context,
-                            MaterialPageRoute(builder: (_) => const RegisterScreen())),
-                        child: const Text('Register here',
-                            style: TextStyle(
-                              color: _blue, fontSize: 14, fontWeight: FontWeight.w700,
-                            )),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RegisterScreen(),
+                          ),
+                        ),
+                        child: const Text(
+                          'Register here',
+                          style: TextStyle(
+                            color: _blue,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -286,8 +348,14 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _label(String label) => Text(label,
-      style: const TextStyle(color: _ink, fontSize: 13, fontWeight: FontWeight.w600));
+  Widget _label(String label) => Text(
+    label,
+    style: const TextStyle(
+      color: _ink,
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+    ),
+  );
 
   InputDecoration _inputDecoration({
     required String hint,
@@ -302,15 +370,15 @@ class _LoginScreenState extends State<LoginScreen> {
       filled: true,
       fillColor: _card,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         borderSide: const BorderSide(color: _outline),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         borderSide: const BorderSide(color: _outline),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         borderSide: const BorderSide(color: _blue, width: 1.5),
       ),
     );

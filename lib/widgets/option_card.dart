@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class OptionCard extends StatelessWidget {
   const OptionCard({
@@ -30,19 +30,16 @@ class OptionCard extends StatelessWidget {
         height: height,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF4F6FB),
+          color: const Color(0xFFF3F2ED),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? const Color(0xFF1689F7) : Colors.transparent,
+            color: selected ? const Color(0xFF035C4A) : Colors.transparent,
             width: 1.6,
           ),
         ),
         child: Row(
           children: [
-            if (leading != null) ...[
-              leading!,
-              const SizedBox(width: 12),
-            ],
+            if (leading != null) ...[leading!, const SizedBox(width: 12)],
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -53,8 +50,9 @@ class OptionCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color:
-                          selected ? const Color(0xFF1689F7) : const Color(0xFF1E1E1E),
+                      color: selected
+                          ? const Color(0xFF035C4A)
+                          : const Color(0xFF2A323E),
                     ),
                   ),
                   if (subtitle != null) ...[
@@ -63,7 +61,7 @@ class OptionCard extends StatelessWidget {
                       subtitle!,
                       style: const TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF6F6F75),
+                        color: Color(0xFF535E62),
                       ),
                     ),
                   ],

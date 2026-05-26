@@ -13,17 +13,20 @@ class SeedScreen extends StatefulWidget {
 }
 
 class _SeedScreenState extends State<SeedScreen> {
-  static const _blue   = Color(0xFF00E5FF);
-  static const _blueDk = Color(0xFF7C3DFF);
-  static const _bg     = Color(0xFF05070D);
-  static const _ink    = Color(0xFFF8FAFC);
-  static const _muted  = Color(0xFF94A3B8);
+  static const _blue = Color(0xFF035C4A);
+  static const _blueDk = Color(0xFF02473A);
+  static const _bg = Color(0xFFF9F7F2);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
 
   String _status = 'Setting up Firestore...';
-  bool   _done   = false;
+  bool _done = false;
 
   @override
-  void initState() { super.initState(); _seed(); }
+  void initState() {
+    super.initState();
+    _seed();
+  }
 
   Future<void> _seed() async {
     final db = FirebaseFirestore.instance;
@@ -55,7 +58,7 @@ class _SeedScreenState extends State<SeedScreen> {
 
       setState(() {
         _status = '✓ Gym & test member ready — login below';
-        _done   = true;
+        _done = true;
       });
     } catch (e) {
       setState(() => _status = 'Error: $e');
@@ -69,9 +72,11 @@ class _SeedScreenState extends State<SeedScreen> {
       body: Stack(
         children: [
           Positioned(
-            top: -60, right: -60,
+            top: -60,
+            right: -60,
             child: Container(
-              width: 220, height: 220,
+              width: 220,
+              height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _blue.withOpacity(0.08),
@@ -79,9 +84,11 @@ class _SeedScreenState extends State<SeedScreen> {
             ),
           ),
           Positioned(
-            bottom: 40, left: -60,
+            bottom: 40,
+            left: -60,
             child: Container(
-              width: 180, height: 180,
+              width: 180,
+              height: 180,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _blue.withOpacity(0.05),
@@ -95,7 +102,8 @@ class _SeedScreenState extends State<SeedScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 72, height: 72,
+                    width: 72,
+                    height: 72,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [_blue, _blueDk],
@@ -104,21 +112,34 @@ class _SeedScreenState extends State<SeedScreen> {
                       ),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
-                        BoxShadow(color: _blue.withOpacity(0.3),
-                            blurRadius: 20, offset: const Offset(0, 8)),
+                        BoxShadow(
+                          color: _blue.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
                       ],
                     ),
-                    child: const Icon(Icons.fitness_center,
-                        color: Colors.white, size: 34),
+                    child: const Icon(
+                      Icons.fitness_center,
+                      color: Colors.white,
+                      size: 34,
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  const Text('Fitness Factor',
-                      style: TextStyle(color: _ink, fontSize: 26,
-                          fontWeight: FontWeight.w800)),
+                  const Text(
+                    'Fitness Factor',
+                    style: TextStyle(
+                      color: _ink,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  Text(_status,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: _muted, fontSize: 15)),
+                  Text(
+                    _status,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: _muted, fontSize: 15),
+                  ),
                   if (_done) ...[
                     const SizedBox(height: 32),
                     Container(
@@ -131,54 +152,79 @@ class _SeedScreenState extends State<SeedScreen> {
                         boxShadow: [
                           BoxShadow(
                             color: _blue.withOpacity(0.08),
-                            blurRadius: 16, offset: const Offset(0, 6),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
                       child: Column(
                         children: [
-                          const Text('Setup Complete',
-                              style: TextStyle(color: _ink, fontSize: 16,
-                                  fontWeight: FontWeight.w700)),
+                          const Text(
+                            'Setup Complete',
+                            style: TextStyle(
+                              color: _ink,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                           const SizedBox(height: 16),
-                          _credRow(Icons.person_outline, 'Member Login',
-                              '+60123456789'),
+                          _credRow(
+                            Icons.person_outline,
+                            'Member Login',
+                            '+60123456789',
+                          ),
                           const SizedBox(height: 10),
-                          _credRow(Icons.fitness_center, 'Gym ID',
-                              BasicGymConfig.gymId),
+                          _credRow(
+                            Icons.fitness_center,
+                            'Gym ID',
+                            BasicGymConfig.gymId,
+                          ),
                           const SizedBox(height: 10),
-                          _credRow(Icons.admin_panel_settings_outlined, 'Admin PIN',
-                              BasicGymConfig.adminPin),
+                          _credRow(
+                            Icons.admin_panel_settings_outlined,
+                            'Admin PIN',
+                            BasicGymConfig.adminPin,
+                          ),
                           const SizedBox(height: 20),
                           SizedBox(
-                            width: double.infinity, height: 52,
+                            width: double.infinity,
+                            height: 52,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                    colors: [_blue, _blueDk]),
+                                  colors: [_blue, _blueDk],
+                                ),
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: [
                                   BoxShadow(
                                     color: _blue.withOpacity(0.35),
-                                    blurRadius: 16, offset: const Offset(0, 6),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
                               child: ElevatedButton(
-                                onPressed: () =>
-                                    Navigator.pushReplacement(context,
-                                        MaterialPageRoute(
-                                            builder: (_) => const LoginScreen())),
+                                onPressed: () => Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginScreen(),
+                                  ),
+                                ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.transparent,
                                   shadowColor: Colors.transparent,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14)),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
                                 ),
-                                child: const Text('Open Login',
-                                    style: TextStyle(fontWeight: FontWeight.w700,
-                                        fontSize: 16)),
+                                child: const Text(
+                                  'Open Login',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -215,12 +261,19 @@ class _SeedScreenState extends State<SeedScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(color: _muted, fontSize: 12)),
+                Text(
+                  label,
+                  style: const TextStyle(color: _muted, fontSize: 12),
+                ),
                 const SizedBox(height: 1),
-                Text(value,
-                    style: const TextStyle(color: _ink, fontSize: 14,
-                        fontWeight: FontWeight.w700)),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
           ),
@@ -230,9 +283,14 @@ class _SeedScreenState extends State<SeedScreen> {
               color: _blue.withOpacity(0.10),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: const Text('TEST',
-                style: TextStyle(color: _blue, fontSize: 10,
-                    fontWeight: FontWeight.w700)),
+            child: const Text(
+              'TEST',
+              style: TextStyle(
+                color: _blue,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),

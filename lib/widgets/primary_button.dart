@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
@@ -21,8 +21,8 @@ class PrimaryButton extends StatelessWidget {
         onPressed: enabled ? onTap : null,
         style: ElevatedButton.styleFrom(
           elevation: 0,
-          disabledBackgroundColor: const Color(0xFFDCDDDF),
-          backgroundColor: const Color(0xFF2D84EA),
+          disabledBackgroundColor: const Color(0xFFC3C8C6),
+          backgroundColor: const Color(0xFF035C4A),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
           ),
@@ -30,7 +30,7 @@ class PrimaryButton extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: enabled ? Colors.white : const Color(0xFFAEB1B9),
+            color: enabled ? Colors.white : const Color(0xFF7A8582),
             fontSize: 35 / 2,
             fontWeight: FontWeight.w700,
           ),

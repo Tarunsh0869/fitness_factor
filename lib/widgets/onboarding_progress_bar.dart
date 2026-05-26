@@ -1,10 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class OnboardingProgressBar extends StatelessWidget {
-  const OnboardingProgressBar({
-    super.key,
-    required this.progress,
-  });
+  const OnboardingProgressBar({super.key, required this.progress});
 
   final double progress;
 
@@ -13,7 +10,7 @@ class OnboardingProgressBar extends StatelessWidget {
     return Container(
       height: 4,
       decoration: BoxDecoration(
-        color: const Color(0xFFD6D8DE),
+        color: const Color(0xFFC3C8C6),
         borderRadius: BorderRadius.circular(99),
       ),
       child: FractionallySizedBox(
@@ -21,7 +18,7 @@ class OnboardingProgressBar extends StatelessWidget {
         alignment: Alignment.centerLeft,
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1689F7),
+            color: const Color(0xFF035C4A),
             borderRadius: BorderRadius.circular(99),
           ),
         ),

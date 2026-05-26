@@ -122,7 +122,9 @@ class JwtAuthService {
     if (parts.length != 3) return null;
 
     try {
-      final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      final payload = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
       final json = jsonDecode(payload);
       final exp = json is Map<String, dynamic> ? json['exp'] : null;
       if (exp is num) {

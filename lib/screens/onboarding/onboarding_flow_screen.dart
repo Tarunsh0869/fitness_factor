@@ -57,7 +57,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FB),
+      backgroundColor: const Color(0xFFF9F7F2),
       body: SafeArea(
         child: Column(
           children: [
@@ -67,7 +67,10 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                 children: [
                   IconButton(
                     onPressed: _model.previousStep,
-                    icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFFB0B4BC)),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new,
+                      color: Color(0xFF7A8582),
+                    ),
                   ),
                   Expanded(
                     child: SizedBox(
@@ -93,7 +96,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
               child: PrimaryButton(
-                label: _model.step == OnboardingModel.totalSteps - 1 ? 'Get started' : 'Continue',
+                label: _model.step == OnboardingModel.totalSteps - 1
+                    ? 'Get started'
+                    : 'Continue',
                 enabled: _model.canContinue,
                 onTap: _continue,
               ),
@@ -133,4 +138,3 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     }
   }
 }
-

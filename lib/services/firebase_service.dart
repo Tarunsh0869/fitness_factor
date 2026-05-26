@@ -9,8 +9,11 @@ class FirebaseService {
 
   static Future<void> init() async {
     try {
-      await FirebaseMessaging.instance
-          .requestPermission(alert: true, badge: true, sound: true);
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) await _saveToken(token);
       FirebaseMessaging.instance.onTokenRefresh.listen(_saveToken);

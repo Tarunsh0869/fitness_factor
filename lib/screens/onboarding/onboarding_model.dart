@@ -1,23 +1,10 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 
 enum Gender { male, female }
 
-enum ExperienceLevel {
-  newLifter,
-  months,
-  year,
-  years,
-  competitor,
-}
+enum ExperienceLevel { newLifter, months, year, years, competitor }
 
-enum EquipmentType {
-  fullGym,
-  barbells,
-  dumbbells,
-  kettlebells,
-  machines,
-  none,
-}
+enum EquipmentType { fullGym, barbells, dumbbells, kettlebells, machines, none }
 
 class OnboardingModel extends ChangeNotifier {
   int step = 0;

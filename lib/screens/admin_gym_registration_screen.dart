@@ -8,18 +8,21 @@ class AdminGymRegistrationScreen extends StatefulWidget {
   const AdminGymRegistrationScreen({super.key});
 
   @override
-  State<AdminGymRegistrationScreen> createState() => _AdminGymRegistrationScreenState();
+  State<AdminGymRegistrationScreen> createState() =>
+      _AdminGymRegistrationScreenState();
 }
 
-class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen> {
-  static const _blue   = Color(0xFF2563EB);
-  static const _blueDk = Color(0xFF1D4ED8);
-  static const _red    = Color(0xFFEF4444);
-  static const _green  = Color(0xFF16A34A);
-  static const _bg     = Color(0xFFF0F4FF);
-  static const _card   = Colors.white;
-  static const _ink    = Color(0xFF111827);
-  static const _muted  = Color(0xFF6B7280);
+class _AdminGymRegistrationScreenState
+    extends State<AdminGymRegistrationScreen> {
+  static const _blue = Color(0xFF035C4A);
+  static const _blueDk = Color(0xFF02473A);
+  static const _red = Color(0xFFB3261E);
+  static const _green = Color(0xFF0A8F69);
+  static const _bg = Color(0xFFF9F7F2);
+  static const _card = Color(0xFFF3F2ED);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
+  static const _outline = Color(0xFFC3C8C6);
 
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
@@ -56,7 +59,9 @@ class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen>
         });
       } else {
         if (mounted) {
-          setState(() => _error = 'Could not fetch location. Please try again.');
+          setState(
+            () => _error = 'Could not fetch location. Please try again.',
+          );
         }
       }
     } catch (e) {
@@ -90,8 +95,8 @@ class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen>
 
     setState(() => _saving = true);
     try {
-       // Create a new gym document with auto-generated ID
-       final docRef = await AdminService.db.collection('gyms').add({
+      // Create a new gym document with auto-generated ID
+      final docRef = await AdminService.db.collection('gyms').add({
         'name': name,
         'latitude': lat,
         'longitude': lng,
@@ -110,9 +115,10 @@ class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen>
       );
 
       if (!mounted) return;
-      Navigator.pushReplacement(context, MaterialPageRoute(
-        builder: (_) => AdminDashboardScreen(gymId: gymId),
-      ));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => AdminDashboardScreen(gymId: gymId)),
+      );
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -131,8 +137,10 @@ class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen>
         backgroundColor: _bg,
         foregroundColor: _ink,
         elevation: 0,
-        title: const Text('Register New Gym',
-            style: TextStyle(fontWeight: FontWeight.w700, color: _ink)),
+        title: const Text(
+          'Register New Gym',
+          style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
+        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _blue))
@@ -161,28 +169,40 @@ class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen>
                       keyboardType: TextInputType.number,
                       obscureText: true,
                       maxLength: 4,
-                      style: const TextStyle(color: _ink, fontSize: 20,
-                          letterSpacing: 8, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        color: _ink,
+                        fontSize: 20,
+                        letterSpacing: 8,
+                        fontWeight: FontWeight.w700,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'PIN',
                         labelStyle: TextStyle(color: _muted),
-                        prefixIcon: const Icon(Icons.lock_outline, color: _blue),
+                        prefixIcon: const Icon(
+                          Icons.lock_outline,
+                          color: _blue,
+                        ),
                         filled: true,
                         fillColor: _card,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(color: _outline),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(color: _outline),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: _blue, width: 1.5),
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(
+                            color: _blue,
+                            width: 1.5,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 15),
+                          horizontal: 16,
+                          vertical: 15,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -191,62 +211,88 @@ class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen>
                       keyboardType: TextInputType.number,
                       obscureText: true,
                       maxLength: 4,
-                      style: const TextStyle(color: _ink, fontSize: 20,
-                          letterSpacing: 8, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        color: _ink,
+                        fontSize: 20,
+                        letterSpacing: 8,
+                        fontWeight: FontWeight.w700,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Confirm PIN',
                         labelStyle: TextStyle(color: _muted),
-                        prefixIcon: const Icon(Icons.lock_outline, color: _blue),
+                        prefixIcon: const Icon(
+                          Icons.lock_outline,
+                          color: _blue,
+                        ),
                         filled: true,
                         fillColor: _card,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(color: _outline),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(color: _outline),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: _blue, width: 1.5),
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(
+                            color: _blue,
+                            width: 1.5,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 15),
+                          horizontal: 16,
+                          vertical: 15,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
 
                     _sectionLabel('Location'),
                     const SizedBox(height: 4),
-                    Text("We'll use your device's location to set the gym's coordinates.",
-                        style: TextStyle(color: _muted, fontSize: 12)),
+                    Text(
+                      "We'll use your device's location to set the gym's coordinates.",
+                      style: TextStyle(color: _muted, fontSize: 12),
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(child: _textField(
-                          controller: _latCtrl,
-                          label: 'Latitude',
-                          icon: Icons.my_location_outlined,
-                          keyboardType: TextInputType.numberWithOptions(decimal: true, signed: true),
-                          validator: (v) {
-                            if (v!.trim().isEmpty) return 'Required';
-                            if (double.tryParse(v.trim()) == null) return 'Invalid';
-                            return null;
-                          },
-                        )),
+                        Expanded(
+                          child: _textField(
+                            controller: _latCtrl,
+                            label: 'Latitude',
+                            icon: Icons.my_location_outlined,
+                            keyboardType: TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: true,
+                            ),
+                            validator: (v) {
+                              if (v!.trim().isEmpty) return 'Required';
+                              if (double.tryParse(v.trim()) == null)
+                                return 'Invalid';
+                              return null;
+                            },
+                          ),
+                        ),
                         const SizedBox(width: 12),
-                        Expanded(child: _textField(
-                          controller: _lngCtrl,
-                          label: 'Longitude',
-                          icon: Icons.my_location_outlined,
-                          keyboardType: TextInputType.numberWithOptions(decimal: true, signed: true),
-                          validator: (v) {
-                            if (v!.trim().isEmpty) return 'Required';
-                            if (double.tryParse(v.trim()) == null) return 'Invalid';
-                            return null;
-                          },
-                        )),
+                        Expanded(
+                          child: _textField(
+                            controller: _lngCtrl,
+                            label: 'Longitude',
+                            icon: Icons.my_location_outlined,
+                            keyboardType: TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: true,
+                            ),
+                            validator: (v) {
+                              if (v!.trim().isEmpty) return 'Required';
+                              if (double.tryParse(v.trim()) == null)
+                                return 'Invalid';
+                              return null;
+                            },
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -260,16 +306,22 @@ class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen>
                           foregroundColor: _blue,
                           side: BorderSide(color: _blue.withOpacity(0.3)),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
                         ),
                         icon: _locationFetching
-                            ? const SizedBox(width: 20, height: 20,
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
                                 child: CircularProgressIndicator(
-                                    color: _blue, strokeWidth: 2))
+                                  color: _blue,
+                                  strokeWidth: 2,
+                                ),
+                              )
                             : const Icon(Icons.my_location_outlined),
-                        label: Text(_locationFetching
-                            ? 'Fetching...'
-                            : 'Use My Location'),
+                        label: Text(
+                          _locationFetching ? 'Fetching...' : 'Use My Location',
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -282,12 +334,25 @@ class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen>
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: _red.withOpacity(0.25)),
                         ),
-                        child: Row(children: [
-                          const Icon(Icons.error_outline, color: _red, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(_error!,
-                              style: const TextStyle(color: _red, fontSize: 13))),
-                        ]),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: _red,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _error!,
+                                style: const TextStyle(
+                                  color: _red,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                     if (_success != null) ...[
@@ -298,26 +363,41 @@ class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen>
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: _green.withOpacity(0.25)),
                         ),
-                        child: Row(children: [
-                          const Icon(Icons.check_circle_outline,
-                              color: _green, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(_success!,
-                              style: TextStyle(color: _green, fontSize: 13))),
-                        ]),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle_outline,
+                              color: _green,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _success!,
+                                style: TextStyle(color: _green, fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
 
                     const SizedBox(height: 32),
                     SizedBox(
-                      width: double.infinity, height: 54,
+                      width: double.infinity,
+                      height: 54,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [_blue, _blueDk]),
-                          borderRadius: BorderRadius.circular(14),
+                          gradient: const LinearGradient(
+                            colors: [_blue, _blueDk],
+                          ),
+                          borderRadius: BorderRadius.circular(18),
                           boxShadow: [
-                            BoxShadow(color: _blue.withOpacity(0.35),
-                                blurRadius: 16, offset: const Offset(0, 6)),
+                            BoxShadow(
+                              color: _blue.withOpacity(0.35),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
                           ],
                         ),
                         child: ElevatedButton(
@@ -327,15 +407,25 @@ class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen>
                             shadowColor: Colors.transparent,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14)),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
                           ),
                           child: _saving
-                              ? const SizedBox(width: 22, height: 22,
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
                                   child: CircularProgressIndicator(
-                                      color: Colors.white, strokeWidth: 2.5))
-                              : const Text('Register Gym',
-                                  style: TextStyle(fontWeight: FontWeight.w700,
-                                      fontSize: 16)),
+                                    color: Colors.white,
+                                    strokeWidth: 2.5,
+                                  ),
+                                )
+                              : const Text(
+                                  'Register Gym',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -348,11 +438,17 @@ class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen>
   }
 
   Widget _sectionLabel(String label) => Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Text(label.toUpperCase(),
-            style: const TextStyle(color: _blue, fontSize: 11,
-                fontWeight: FontWeight.w700, letterSpacing: 1.4)),
-      );
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Text(
+      label.toUpperCase(),
+      style: const TextStyle(
+        color: _blue,
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.4,
+      ),
+    ),
+  );
 
   Widget _textField({
     required TextEditingController controller,
@@ -373,27 +469,30 @@ class _AdminGymRegistrationScreenState extends State<AdminGymRegistrationScreen>
         filled: true,
         fillColor: _card,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: _outline),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: _outline),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           borderSide: const BorderSide(color: _blue, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: _red, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: _red, width: 1),
         ),
         errorStyle: const TextStyle(color: _red),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 15,
+        ),
       ),
     );
   }

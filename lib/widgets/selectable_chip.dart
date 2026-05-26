@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class SelectableChip extends StatelessWidget {
   const SelectableChip({
@@ -21,17 +21,17 @@ class SelectableChip extends StatelessWidget {
         duration: const Duration(milliseconds: 170),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F3F8),
+          color: const Color(0xFFF3F2ED),
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: selected ? const Color(0xFF1689F7) : const Color(0xFFE0E3EB),
+            color: selected ? const Color(0xFF035C4A) : const Color(0xFFC3C8C6),
             width: 1.5,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? const Color(0xFF1689F7) : const Color(0xFF1E1E1E),
+            color: selected ? const Color(0xFF035C4A) : const Color(0xFF2A323E),
             fontWeight: FontWeight.w500,
             fontSize: 16,
           ),

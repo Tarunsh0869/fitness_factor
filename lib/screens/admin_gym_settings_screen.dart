@@ -13,23 +13,24 @@ class AdminGymSettingsScreen extends StatefulWidget {
 }
 
 class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
-  static const _blue   = Color(0xFF00E5FF);
-  static const _blueDk = Color(0xFF7C3DFF);
-  static const _red    = Color(0xFFFF2D75);
-  static const _green  = Color(0xFF39FF14);
-  static const _bg     = Color(0xFF05070D);
-  static const _card   = Color(0xFF101827);
-  static const _ink    = Color(0xFFF8FAFC);
-  static const _muted  = Color(0xFF94A3B8);
+  static const _blue = Color(0xFF035C4A);
+  static const _blueDk = Color(0xFF02473A);
+  static const _red = Color(0xFFB3261E);
+  static const _green = Color(0xFF0A8F69);
+  static const _bg = Color(0xFFF9F7F2);
+  static const _card = Color(0xFFF3F2ED);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
+  static const _outline = Color(0xFFC3C8C6);
 
-  final _formKey    = GlobalKey<FormState>();
-  final _nameCtrl   = TextEditingController();
-  final _latCtrl    = TextEditingController();
-  final _lngCtrl    = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
+  final _latCtrl = TextEditingController();
+  final _lngCtrl = TextEditingController();
   final _radiusCtrl = TextEditingController();
 
-  bool _loading     = true;
-  bool _saving      = false;
+  bool _loading = true;
+  bool _saving = false;
 
   // Admin PINs management
   List<String> _adminPins = [];
@@ -60,9 +61,9 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
   Future<void> _load() async {
     final gym = await AttendanceService.getGym(widget.gymId);
     if (gym != null && mounted) {
-      _nameCtrl.text   = gym['name']         ?? '';
-      _latCtrl.text    = '${gym['latitude']  ?? ''}';
-      _lngCtrl.text    = '${gym['longitude'] ?? ''}';
+      _nameCtrl.text = gym['name'] ?? '';
+      _latCtrl.text = '${gym['latitude'] ?? ''}';
+      _lngCtrl.text = '${gym['longitude'] ?? ''}';
       _radiusCtrl.text = '${gym['radiusMeters'] ?? 50}';
       _adminPins = List<String>.from(gym['adminPins'] ?? []);
     }
@@ -72,20 +73,22 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
   Future<void> _saveGymSettings() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() { _saving = true; });
+    setState(() {
+      _saving = true;
+    });
 
     final ok = await AdminService.updateGymSettings(
-      gymId:        widget.gymId,
-      name:         _nameCtrl.text.trim(),
-      latitude:     double.parse(_latCtrl.text.trim()),
-      longitude:    double.parse(_lngCtrl.text.trim()),
+      gymId: widget.gymId,
+      name: _nameCtrl.text.trim(),
+      latitude: double.parse(_latCtrl.text.trim()),
+      longitude: double.parse(_lngCtrl.text.trim()),
       radiusMeters: int.parse(_radiusCtrl.text.trim()),
-      adminPins:    _adminPins,
+      adminPins: _adminPins,
     );
 
     if (mounted) {
       setState(() {
-        _saving  = false;
+        _saving = false;
         if (ok) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Gym settings saved successfully.')),
@@ -187,8 +190,10 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
         backgroundColor: _bg,
         foregroundColor: _ink,
         elevation: 0,
-        title: const Text('Gym Settings',
-            style: TextStyle(fontWeight: FontWeight.w700, color: _ink)),
+        title: const Text(
+          'Gym Settings',
+          style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
+        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _blue))
@@ -201,10 +206,13 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                   children: [
                     _sectionLabel('Gym Information'),
                     const SizedBox(height: 12),
-                    _field(controller: _nameCtrl, label: 'Gym Name',
-                        icon: Icons.store_outlined,
-                        validator: (v) =>
-                            v!.trim().isEmpty ? 'Name is required' : null),
+                    _field(
+                      controller: _nameCtrl,
+                      label: 'Gym Name',
+                      icon: Icons.store_outlined,
+                      validator: (v) =>
+                          v!.trim().isEmpty ? 'Name is required' : null,
+                    ),
                     const SizedBox(height: 24),
 
                     _sectionLabel('Geofence Location'),
@@ -218,13 +226,20 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline, color: _blue, size: 16),
+                          const Icon(
+                            Icons.info_outline,
+                            color: _blue,
+                            size: 16,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Use Google Maps to find your gym\'s exact coordinates.',
-                              style: TextStyle(color: _muted, fontSize: 12,
-                                  height: 1.4),
+                              style: TextStyle(
+                                color: _muted,
+                                fontSize: 12,
+                                height: 1.4,
+                              ),
                             ),
                           ),
                         ],
@@ -233,35 +248,43 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(child: _field(
-                          controller: _latCtrl,
-                          label: 'Latitude',
-                          icon: Icons.my_location_outlined,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true, signed: true),
-                          validator: (v) {
-                            if (v!.trim().isEmpty) return 'Required';
-                            if (double.tryParse(v.trim()) == null) {
-                              return 'Invalid';
-                            }
-                            return null;
-                          },
-                        )),
+                        Expanded(
+                          child: _field(
+                            controller: _latCtrl,
+                            label: 'Latitude',
+                            icon: Icons.my_location_outlined,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: true,
+                            ),
+                            validator: (v) {
+                              if (v!.trim().isEmpty) return 'Required';
+                              if (double.tryParse(v.trim()) == null) {
+                                return 'Invalid';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
                         const SizedBox(width: 12),
-                        Expanded(child: _field(
-                          controller: _lngCtrl,
-                          label: 'Longitude',
-                          icon: Icons.my_location_outlined,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true, signed: true),
-                          validator: (v) {
-                            if (v!.trim().isEmpty) return 'Required';
-                            if (double.tryParse(v.trim()) == null) {
-                              return 'Invalid';
-                            }
-                            return null;
-                          },
-                        )),
+                        Expanded(
+                          child: _field(
+                            controller: _lngCtrl,
+                            label: 'Longitude',
+                            icon: Icons.my_location_outlined,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: true,
+                            ),
+                            validator: (v) {
+                              if (v!.trim().isEmpty) return 'Required';
+                              if (double.tryParse(v.trim()) == null) {
+                                return 'Invalid';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -283,47 +306,62 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
 
                     _sectionLabel('Admin PINs'),
                     const SizedBox(height: 4),
-                    Text('Manage administrator PINs. Each admin can use a unique PIN to access the gym.',
-                        style: TextStyle(color: _muted, fontSize: 12)),
+                    Text(
+                      'Manage administrator PINs. Each admin can use a unique PIN to access the gym.',
+                      style: TextStyle(color: _muted, fontSize: 12),
+                    ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _newPinCtrl,
                       keyboardType: TextInputType.number,
                       obscureText: _pinObscured,
                       maxLength: 4,
-                      style: const TextStyle(color: _ink, fontSize: 20,
-                          letterSpacing: 8, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        color: _ink,
+                        fontSize: 20,
+                        letterSpacing: 8,
+                        fontWeight: FontWeight.w700,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'New PIN',
                         labelStyle: TextStyle(color: _muted),
-                        prefixIcon: const Icon(Icons.lock_outline, color: _blue),
+                        prefixIcon: const Icon(
+                          Icons.lock_outline,
+                          color: _blue,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _pinObscured
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
-                            color: _muted, size: 20,
+                            color: _muted,
+                            size: 20,
                           ),
-                          onPressed: () => setState(
-                              () => _pinObscured = !_pinObscured),
+                          onPressed: () =>
+                              setState(() => _pinObscured = !_pinObscured),
                         ),
                         filled: true,
                         fillColor: _card,
                         counterText: '',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(color: _outline),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(color: _outline),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: _blue, width: 1.5),
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(
+                            color: _blue,
+                            width: 1.5,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 15),
+                          horizontal: 16,
+                          vertical: 15,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -332,29 +370,41 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                       keyboardType: TextInputType.number,
                       obscureText: _pinObscured,
                       maxLength: 4,
-                      style: const TextStyle(color: _ink, fontSize: 20,
-                          letterSpacing: 8, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        color: _ink,
+                        fontSize: 20,
+                        letterSpacing: 8,
+                        fontWeight: FontWeight.w700,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Confirm New PIN',
                         labelStyle: TextStyle(color: _muted),
-                        prefixIcon: const Icon(Icons.lock_outline, color: _blue),
+                        prefixIcon: const Icon(
+                          Icons.lock_outline,
+                          color: _blue,
+                        ),
                         filled: true,
                         fillColor: _card,
                         counterText: '',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(color: _outline),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(color: _outline),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: _blue, width: 1.5),
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(
+                            color: _blue,
+                            width: 1.5,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 15),
+                          horizontal: 16,
+                          vertical: 15,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -367,10 +417,14 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.add_moderator_outlined),
-                        label: Text(_addingPin ? 'Adding PIN...' : 'Add Admin PIN'),
+                        label: Text(
+                          _addingPin ? 'Adding PIN...' : 'Add Admin PIN',
+                        ),
                       ),
                     ),
                     if (_adminPins.isNotEmpty) ...[
@@ -382,7 +436,9 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                           return InputChip(
                             label: Text('PIN $pin'),
                             labelStyle: const TextStyle(
-                                color: _ink, fontWeight: FontWeight.w700),
+                              color: _ink,
+                              fontWeight: FontWeight.w700,
+                            ),
                             backgroundColor: _blue.withOpacity(0.08),
                             deleteIconColor: _red,
                             onDeleted: () => _removeAdminPin(pin),
@@ -401,12 +457,25 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: _red.withOpacity(0.25)),
                         ),
-                        child: Row(children: [
-                          const Icon(Icons.error_outline, color: _red, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(_pinError!,
-                              style: const TextStyle(color: _red, fontSize: 13))),
-                        ]),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: _red,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _pinError!,
+                                style: const TextStyle(
+                                  color: _red,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                     if (_pinSuccess != null) ...[
@@ -418,26 +487,41 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: _green.withOpacity(0.25)),
                         ),
-                        child: Row(children: [
-                          const Icon(Icons.check_circle_outline,
-                              color: _green, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(_pinSuccess!,
-                              style: TextStyle(color: _green, fontSize: 13))),
-                        ]),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle_outline,
+                              color: _green,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _pinSuccess!,
+                                style: TextStyle(color: _green, fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
 
                     const SizedBox(height: 32),
                     SizedBox(
-                      width: double.infinity, height: 54,
+                      width: double.infinity,
+                      height: 54,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [_blue, _blueDk]),
-                          borderRadius: BorderRadius.circular(14),
+                          gradient: const LinearGradient(
+                            colors: [_blue, _blueDk],
+                          ),
+                          borderRadius: BorderRadius.circular(18),
                           boxShadow: [
-                            BoxShadow(color: _blue.withOpacity(0.35),
-                                blurRadius: 16, offset: const Offset(0, 6)),
+                            BoxShadow(
+                              color: _blue.withOpacity(0.35),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
                           ],
                         ),
                         child: ElevatedButton(
@@ -447,15 +531,25 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                             shadowColor: Colors.transparent,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14)),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
                           ),
                           child: _saving
-                              ? const SizedBox(width: 22, height: 22,
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
                                   child: CircularProgressIndicator(
-                                      color: Colors.white, strokeWidth: 2.5))
-                              : const Text('Save Settings',
-                                  style: TextStyle(fontWeight: FontWeight.w700,
-                                      fontSize: 16)),
+                                    color: Colors.white,
+                                    strokeWidth: 2.5,
+                                  ),
+                                )
+                              : const Text(
+                                  'Save Settings',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -468,11 +562,17 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
   }
 
   Widget _sectionLabel(String label) => Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Text(label.toUpperCase(),
-            style: const TextStyle(color: _blue, fontSize: 11,
-                fontWeight: FontWeight.w700, letterSpacing: 1.4)),
-      );
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Text(
+      label.toUpperCase(),
+      style: const TextStyle(
+        color: _blue,
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.4,
+      ),
+    ),
+  );
 
   Widget _field({
     required TextEditingController controller,
@@ -493,27 +593,30 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
         filled: true,
         fillColor: _card,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: const Color(0xFF243244)),
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: _outline),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: const Color(0xFF243244)),
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: _outline),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           borderSide: const BorderSide(color: _blue, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: _red, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: _red, width: 1),
         ),
         errorStyle: const TextStyle(color: _red),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 15,
+        ),
       ),
     );
   }

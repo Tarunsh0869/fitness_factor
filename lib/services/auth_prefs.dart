@@ -2,13 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthPrefs {
-  static const _kMemberId   = 'memberId';
+  static const _kMemberId = 'memberId';
   static const _kMemberName = 'memberName';
-  static const _kGymId      = 'gymId';
-  static const _kIsAdmin    = 'isAdmin';
-  static const _kJwtToken   = 'jwtToken';
+  static const _kGymId = 'gymId';
+  static const _kIsAdmin = 'isAdmin';
+  static const _kJwtToken = 'jwtToken';
   static const _kApiMemberId = 'apiMemberId';
-  static const _kApiGymId   = 'apiGymId';
+  static const _kApiGymId = 'apiGymId';
   static const _kJwtExpiresAt = 'jwtExpiresAt';
 
   static Future<void> save({
@@ -23,10 +23,10 @@ class AuthPrefs {
   }) async {
     try {
       final p = await SharedPreferences.getInstance();
-      await p.setString(_kMemberId,   memberId);
+      await p.setString(_kMemberId, memberId);
       await p.setString(_kMemberName, memberName);
-      await p.setString(_kGymId,      gymId);
-      await p.setBool(_kIsAdmin,      isAdmin);
+      await p.setString(_kGymId, gymId);
+      await p.setBool(_kIsAdmin, isAdmin);
       if (jwtToken != null && apiMemberId != null && apiGymId != null) {
         await p.setString(_kJwtToken, jwtToken);
         await p.setInt(_kApiMemberId, apiMemberId);
@@ -49,20 +49,20 @@ class AuthPrefs {
 
   static Future<Map<String, dynamic>?> load() async {
     try {
-      final p    = await SharedPreferences.getInstance();
-      final id   = p.getString(_kMemberId);
+      final p = await SharedPreferences.getInstance();
+      final id = p.getString(_kMemberId);
       final name = p.getString(_kMemberName);
-      final gym  = p.getString(_kGymId);
+      final gym = p.getString(_kGymId);
       final jwtExpiresAtRaw = p.getString(_kJwtExpiresAt);
       if (id == null || name == null || gym == null) return null;
       return {
-        'memberId':   id,
+        'memberId': id,
         'memberName': name,
-        'gymId':      gym,
-        'isAdmin':    p.getBool(_kIsAdmin) ?? false,
-        'jwtToken':   p.getString(_kJwtToken),
+        'gymId': gym,
+        'isAdmin': p.getBool(_kIsAdmin) ?? false,
+        'jwtToken': p.getString(_kJwtToken),
         'apiMemberId': p.getInt(_kApiMemberId),
-        'apiGymId':    p.getInt(_kApiGymId),
+        'apiGymId': p.getInt(_kApiGymId),
         'jwtExpiresAt': jwtExpiresAtRaw == null
             ? null
             : DateTime.tryParse(jwtExpiresAtRaw),

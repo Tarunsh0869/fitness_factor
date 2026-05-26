@@ -1,17 +1,14 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({
-    super.key,
-    required this.onJoin,
-  });
+  const WelcomeScreen({super.key, required this.onJoin});
 
   final VoidCallback onJoin;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FB),
+      backgroundColor: const Color(0xFFF9F7F2),
       body: SafeArea(
         child: Column(
           children: [
@@ -32,7 +29,7 @@ class WelcomeScreen extends StatelessWidget {
                   fontSize: 58 / 2,
                   height: 1.3,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1E1E1E),
+                  color: Color(0xFF2A323E),
                 ),
               ),
             ),
@@ -46,7 +43,7 @@ class WelcomeScreen extends StatelessWidget {
                   onPressed: onJoin,
                   style: ElevatedButton.styleFrom(
                     elevation: 0,
-                    backgroundColor: const Color(0xFF2D84EA),
+                    backgroundColor: const Color(0xFF035C4A),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(31),
                     ),

@@ -13,29 +13,36 @@ class AdminLoginScreen extends StatefulWidget {
 }
 
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
-  static const _blue   = Color(0xFF00E5FF);
-  static const _blueDk = Color(0xFF7C3DFF);
-  static const _red    = Color(0xFFFF2D75);
-  static const _bg     = Color(0xFF05070D);
-  static const _card   = Color(0xFF101827);
-  static const _ink    = Color(0xFFF8FAFC);
-  static const _muted  = Color(0xFF94A3B8);
+  static const _blue = Color(0xFF035C4A);
+  static const _blueDk = Color(0xFF02473A);
+  static const _red = Color(0xFFB3261E);
+  static const _bg = Color(0xFFF9F7F2);
+  static const _card = Color(0xFFF3F2ED);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
+  static const _outline = Color(0xFFC3C8C6);
 
   final _gymIdCtrl = TextEditingController();
   final _pin = <int>[];
   bool _loading = false;
-  bool _error   = false;
+  bool _error = false;
   String? _gymIdError;
 
   void _onKey(int digit) {
     if (_pin.length >= 4) return;
-    setState(() { _pin.add(digit); _error = false; });
+    setState(() {
+      _pin.add(digit);
+      _error = false;
+    });
     if (_pin.length == 4) _verify();
   }
 
   void _onDelete() {
     if (_pin.isEmpty) return;
-    setState(() { _pin.removeLast(); _error = false; });
+    setState(() {
+      _pin.removeLast();
+      _error = false;
+    });
   }
 
   Future<void> _verify() async {
@@ -51,17 +58,21 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     setState(() => _loading = false);
     if (ok) {
       await AuthPrefs.save(
-        memberId:   'admin',
+        memberId: 'admin',
         memberName: 'Admin',
-        gymId:      gymId,
-        isAdmin:    true,
+        gymId: gymId,
+        isAdmin: true,
       );
       if (!mounted) return;
-      Navigator.pushReplacement(context, MaterialPageRoute(
-        builder: (_) => AdminDashboardScreen(gymId: gymId),
-      ));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => AdminDashboardScreen(gymId: gymId)),
+      );
     } else {
-      setState(() { _pin.clear(); _error = true; });
+      setState(() {
+        _pin.clear();
+        _error = true;
+      });
     }
   }
 
@@ -79,8 +90,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         backgroundColor: _bg,
         foregroundColor: _ink,
         elevation: 0,
-        title: const Text('Admin Access',
-            style: TextStyle(fontWeight: FontWeight.w700, color: _ink)),
+        title: const Text(
+          'Admin Access',
+          style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -89,20 +102,27 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 72, height: 72,
+                width: 72,
+                height: 72,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [_blue, _blueDk]),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
-                    BoxShadow(color: _blue.withOpacity(0.3),
-                        blurRadius: 20, offset: const Offset(0, 8)),
+                    BoxShadow(
+                      color: _blue.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
                   ],
                 ),
-                child: const Icon(Icons.admin_panel_settings_outlined,
-                    color: Colors.white, size: 34),
+                child: const Icon(
+                  Icons.admin_panel_settings_outlined,
+                  color: Colors.white,
+                  size: 34,
+                ),
               ),
               const SizedBox(height: 24),
-              
+
               // Gym ID Input
               TextFormField(
                 controller: _gymIdCtrl,
@@ -111,41 +131,52 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   labelStyle: TextStyle(color: _muted),
                   prefixIcon: const Icon(Icons.fitness_center, color: _blue),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: _card,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: Colors.grey.shade200),
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: const BorderSide(color: _outline),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: Colors.grey.shade200),
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: const BorderSide(color: _outline),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(18),
                     borderSide: const BorderSide(color: _blue, width: 1.5),
                   ),
                   errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(18),
                     borderSide: BorderSide(color: _red, width: 1),
                   ),
                   focusedErrorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(18),
                     borderSide: BorderSide(color: _red, width: 1),
                   ),
                   errorText: _gymIdError,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 15,
+                  ),
                 ),
                 style: const TextStyle(color: _ink, fontSize: 15),
-                validator: (v) => v!.trim().isEmpty ? 'Gym ID is required' : null,
+                validator: (v) =>
+                    v!.trim().isEmpty ? 'Gym ID is required' : null,
               ),
               const SizedBox(height: 16),
-              
-              const Text('Enter Admin PIN',
-                  style: TextStyle(color: _ink, fontSize: 22,
-                      fontWeight: FontWeight.w800)),
+
+              const Text(
+                'Enter Admin PIN',
+                style: TextStyle(
+                  color: _ink,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 8),
-              Text('4-digit PIN required',
-                  style: TextStyle(color: _muted, fontSize: 14)),
+              Text(
+                '4-digit PIN required',
+                style: TextStyle(color: _muted, fontSize: 14),
+              ),
               const SizedBox(height: 32),
 
               // PIN dots
@@ -156,14 +187,21 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     margin: const EdgeInsets.symmetric(horizontal: 10),
-                    width: 18, height: 18,
+                    width: 18,
+                    height: 18,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: _error
                           ? _red
-                          : filled ? _blue : Colors.transparent,
+                          : filled
+                          ? _blue
+                          : Colors.transparent,
                       border: Border.all(
-                        color: _error ? _red : filled ? _blue : _muted,
+                        color: _error
+                            ? _red
+                            : filled
+                            ? _blue
+                            : _muted,
                         width: 2,
                       ),
                     ),
@@ -173,9 +211,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
               if (_error) ...[
                 const SizedBox(height: 12),
-                Text('Incorrect PIN. Try again.',
-                    style: const TextStyle(color: _red, fontSize: 13,
-                        fontWeight: FontWeight.w600)),
+                Text(
+                  'Incorrect PIN. Try again.',
+                  style: const TextStyle(
+                    color: _red,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
 
               const SizedBox(height: 40),
@@ -223,22 +266,31 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     return GestureDetector(
       onTap: isDelete ? _onDelete : () => _onKey(d),
       child: Container(
-        width: 72, height: 64,
+        width: 72,
+        height: 64,
         decoration: BoxDecoration(
           color: _card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: _blue.withOpacity(0.18)),
           boxShadow: [
-            BoxShadow(color: _blue.withOpacity(0.10),
-                blurRadius: 8, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: _blue.withOpacity(0.10),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Center(
           child: isDelete
               ? Icon(Icons.backspace_outlined, color: _muted, size: 22)
-              : Text('$d',
-                  style: const TextStyle(color: _ink, fontSize: 24,
-                      fontWeight: FontWeight.w700)),
+              : Text(
+                  '$d',
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
         ),
       ),
     );

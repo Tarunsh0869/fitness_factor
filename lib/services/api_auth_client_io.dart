@@ -61,8 +61,10 @@ Future<ApiAuthResponse?> _requestJson({
         }
 
         final response = await request.close().timeout(timeout);
-        final responseBody =
-            await response.transform(utf8.decoder).join().timeout(timeout);
+        final responseBody = await response
+            .transform(utf8.decoder)
+            .join()
+            .timeout(timeout);
         return ApiAuthResponse(
           statusCode: response.statusCode,
           json: _decodeMap(responseBody),
@@ -80,8 +82,9 @@ Future<ApiAuthResponse?> _requestJson({
 }
 
 Uri _uriFor(String baseUrl, String path) {
-  final normalizedBase =
-      baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+  final normalizedBase = baseUrl.endsWith('/')
+      ? baseUrl.substring(0, baseUrl.length - 1)
+      : baseUrl;
   final normalizedPath = path.startsWith('/') ? path : '/$path';
   return Uri.parse('$normalizedBase$normalizedPath');
 }

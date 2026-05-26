@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../widgets/selectable_chip.dart';
 import 'onboarding_model.dart';
 
@@ -8,7 +8,14 @@ class FocusAreaScreen extends StatelessWidget {
   final OnboardingModel model;
 
   static const _areas = [
-    'Back', 'Arms', 'Shoulders', 'Abs', 'Chest', 'Legs', 'Glutes', 'Full body'
+    'Back',
+    'Arms',
+    'Shoulders',
+    'Abs',
+    'Chest',
+    'Legs',
+    'Glutes',
+    'Full body',
   ];
 
   @override
@@ -19,7 +26,11 @@ class FocusAreaScreen extends StatelessWidget {
         const Text(
           'Choose your focus areas',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Color(0xFF1E1E1E)),
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF2A323E),
+          ),
         ),
         const SizedBox(height: 18),
         Wrap(
@@ -27,11 +38,13 @@ class FocusAreaScreen extends StatelessWidget {
           runSpacing: 12,
           alignment: WrapAlignment.center,
           children: _areas
-              .map((area) => SelectableChip(
-                    label: area,
-                    selected: model.focusAreas.contains(area),
-                    onTap: () => model.toggleFocusArea(area),
-                  ))
+              .map(
+                (area) => SelectableChip(
+                  label: area,
+                  selected: model.focusAreas.contains(area),
+                  onTap: () => model.toggleFocusArea(area),
+                ),
+              )
               .toList(),
         ),
         const SizedBox(height: 24),
@@ -61,7 +74,7 @@ class FocusAreaScreen extends StatelessWidget {
               child: Icon(
                 Icons.accessibility_new,
                 size: 230,
-                color: idle ? const Color(0xFFD4D7DD) : const Color(0xFFCF5B45),
+                color: idle ? const Color(0xFFC3C8C6) : const Color(0xFF035C4A),
               ),
             ),
           ),

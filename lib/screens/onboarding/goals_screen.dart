@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../widgets/goal_card.dart';
 import 'onboarding_model.dart';
 
@@ -24,13 +24,17 @@ class GoalsScreen extends StatelessWidget {
         const Text(
           'What are your goals?',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 26 * 1.0, fontWeight: FontWeight.w800, color: Color(0xFF1E1E1E)),
+          style: TextStyle(
+            fontSize: 26 * 1.0,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF2A323E),
+          ),
         ),
         const SizedBox(height: 12),
         const Text(
           "Choose as many as you'd like.",
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 18, color: Color(0xFF6F6F75)),
+          style: TextStyle(fontSize: 18, color: Color(0xFF535E62)),
         ),
         const SizedBox(height: 18),
         Expanded(

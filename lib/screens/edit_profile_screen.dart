@@ -22,42 +22,49 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  static const _blue   = Color(0xFF00E5FF);
-  static const _blueDk = Color(0xFF7C3DFF);
-  static const _red    = Color(0xFFFF2D75);
-  static const _bg     = Color(0xFF05070D);
-  static const _card   = Color(0xFF101827);
-  static const _ink    = Color(0xFFF8FAFC);
-  static const _muted  = Color(0xFF94A3B8);
+  static const _blue = Color(0xFF035C4A);
+  static const _blueDk = Color(0xFF02473A);
+  static const _red = Color(0xFFB3261E);
+  static const _bg = Color(0xFFF9F7F2);
+  static const _card = Color(0xFFF3F2ED);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
 
   final _formKey = GlobalKey<FormState>();
-  late final _nameCtrl  = TextEditingController(text: widget.initialName);
+  late final _nameCtrl = TextEditingController(text: widget.initialName);
   late final _emergCtrl = TextEditingController(text: widget.initialEmergency);
   late String _membership = widget.initialMembership;
-  bool    _loading = false;
+  bool _loading = false;
   String? _error;
 
   final _memberships = ['Basic', 'Premium', 'VIP'];
 
   @override
-  void dispose() { _nameCtrl.dispose(); _emergCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _nameCtrl.dispose();
+    _emergCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     final ok = await AttendanceService.updateProfile(
-      memberId:         widget.memberId,
-      name:             _nameCtrl.text.trim(),
+      memberId: widget.memberId,
+      name: _nameCtrl.text.trim(),
       emergencyContact: _emergCtrl.text.trim(),
-      membershipType:   _membership,
+      membershipType: _membership,
     );
     if (!mounted) return;
     setState(() => _loading = false);
     if (ok) {
       Navigator.pop(context, {
-        'name':             _nameCtrl.text.trim(),
+        'name': _nameCtrl.text.trim(),
         'emergencyContact': _emergCtrl.text.trim(),
-        'membershipType':   _membership,
+        'membershipType': _membership,
       });
     } else {
       setState(() => _error = 'Failed to save. Please try again.');
@@ -72,8 +79,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: _bg,
         foregroundColor: _ink,
         elevation: 0,
-        title: const Text('Edit Profile',
-            style: TextStyle(fontWeight: FontWeight.w700, color: _ink)),
+        title: const Text(
+          'Edit Profile',
+          style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -84,15 +93,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             children: [
               _sectionLabel('Personal'),
               const SizedBox(height: 12),
-              _field(controller: _nameCtrl, label: 'Full Name',
-                  icon: Icons.person_outline,
-                  validator: (v) => v!.trim().isEmpty ? 'Name is required' : null),
+              _field(
+                controller: _nameCtrl,
+                label: 'Full Name',
+                icon: Icons.person_outline,
+                validator: (v) => v!.trim().isEmpty ? 'Name is required' : null,
+              ),
               const SizedBox(height: 12),
-              _field(controller: _emergCtrl, label: 'Emergency Contact',
-                  icon: Icons.emergency_outlined,
-                  keyboardType: TextInputType.phone,
-                  validator: (v) => v!.trim().isEmpty
-                      ? 'Emergency contact is required' : null),
+              _field(
+                controller: _emergCtrl,
+                label: 'Emergency Contact',
+                icon: Icons.emergency_outlined,
+                keyboardType: TextInputType.phone,
+                validator: (v) =>
+                    v!.trim().isEmpty ? 'Emergency contact is required' : null,
+              ),
               const SizedBox(height: 28),
               _sectionLabel('Membership Plan'),
               const SizedBox(height: 12),
@@ -110,22 +125,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     children: [
                       const Icon(Icons.error_outline, color: _red, size: 18),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(_error!,
-                          style: const TextStyle(color: _red, fontSize: 13))),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(color: _red, fontSize: 13),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
               const SizedBox(height: 36),
               SizedBox(
-                width: double.infinity, height: 54,
+                width: double.infinity,
+                height: 54,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(colors: [_blue, _blueDk]),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(18),
                     boxShadow: [
-                      BoxShadow(color: _blue.withOpacity(0.35),
-                          blurRadius: 16, offset: const Offset(0, 6)),
+                      BoxShadow(
+                        color: _blue.withOpacity(0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
                     ],
                   ),
                   child: ElevatedButton(
@@ -135,15 +158,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       shadowColor: Colors.transparent,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                     ),
                     child: _loading
-                        ? const SizedBox(width: 22, height: 22,
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
                             child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2.5))
-                        : const Text('Save Changes',
-                            style: TextStyle(fontWeight: FontWeight.w700,
-                                fontSize: 16)),
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : const Text(
+                            'Save Changes',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -156,9 +189,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Widget _sectionLabel(String label) => Padding(
     padding: const EdgeInsets.only(bottom: 4),
-    child: Text(label.toUpperCase(),
-        style: const TextStyle(color: _blue, fontSize: 11,
-            fontWeight: FontWeight.w700, letterSpacing: 1.4)),
+    child: Text(
+      label.toUpperCase(),
+      style: const TextStyle(
+        color: _blue,
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.4,
+      ),
+    ),
   );
 
   Widget _field({
@@ -180,27 +219,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         filled: true,
         fillColor: _card,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: const Color(0xFF243244)),
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: const Color(0xFFC3C8C6)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: const Color(0xFF243244)),
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: const Color(0xFFC3C8C6)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           borderSide: const BorderSide(color: _blue, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           borderSide: const BorderSide(color: _red, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           borderSide: const BorderSide(color: _red, width: 1.5),
         ),
         errorStyle: const TextStyle(color: _red),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 15,
+        ),
       ),
     );
   }
@@ -208,9 +250,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _membershipTile(String type) {
     final sel = _membership == type;
     final details = {
-      'Basic':   {'price': 'RM 80 / month',  'icon': Icons.star_outline},
+      'Basic': {'price': 'RM 80 / month', 'icon': Icons.star_outline},
       'Premium': {'price': 'RM 150 / month', 'icon': Icons.star_half},
-      'VIP':     {'price': 'RM 250 / month', 'icon': Icons.star},
+      'VIP': {'price': 'RM 250 / month', 'icon': Icons.star},
     };
     final d = details[type]!;
     return GestureDetector(
@@ -221,35 +263,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: sel ? _blue.withOpacity(0.06) : _card,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: sel ? _blue : const Color(0xFF243244),
+            color: sel ? _blue : const Color(0xFFC3C8C6),
             width: sel ? 1.5 : 1,
           ),
         ),
         child: Row(
           children: [
-            Icon(d['icon'] as IconData,
-                color: sel ? _blue : _muted, size: 20),
+            Icon(d['icon'] as IconData, color: sel ? _blue : _muted, size: 20),
             const SizedBox(width: 12),
-            Expanded(child: Text(type,
+            Expanded(
+              child: Text(
+                type,
                 style: TextStyle(
                   color: sel ? _ink : _muted,
-                  fontSize: 15, fontWeight: FontWeight.w600,
-                ))),
-            Text(d['price'] as String,
-                style: TextStyle(
-                  color: sel ? _blue : _muted,
-                  fontSize: 13, fontWeight: FontWeight.w600,
-                )),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              d['price'] as String,
+              style: TextStyle(
+                color: sel ? _blue : _muted,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(width: 10),
             Container(
-              width: 20, height: 20,
+              width: 20,
+              height: 20,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: sel ? _blue : Colors.transparent,
                 border: Border.all(
-                    color: sel ? _blue : const Color(0xFF334155), width: 2),
+                  color: sel ? _blue : const Color(0xFF334155),
+                  width: 2,
+                ),
               ),
               child: sel
                   ? const Icon(Icons.check, color: Colors.white, size: 12)

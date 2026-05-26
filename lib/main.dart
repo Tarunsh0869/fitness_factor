@@ -75,12 +75,12 @@ class _AuthGate extends StatelessWidget {
             ),
           );
         }
-        
+
         // If no gyms exist, show registration screen for first admin
         if (!snap.hasData || snap.data!.docs.isEmpty) {
           return const AdminGymRegistrationScreen();
         }
-        
+
         // If gyms exist, check auth state
         return const _AutoLoginGate();
       },
@@ -146,9 +146,9 @@ class _BiometricSessionGateState extends State<_BiometricSessionGate> {
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            backgroundColor: Color(0xFFF0F4FF),
+            backgroundColor: Color(0xFFF9F7F2),
             body: Center(
-              child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+              child: CircularProgressIndicator(color: Color(0xFF035C4A)),
             ),
           );
         }
@@ -164,9 +164,9 @@ class _BiometricSessionGateState extends State<_BiometricSessionGate> {
         }
 
         return HomeScreen(
-          memberId:   saved['memberId'] as String,
+          memberId: saved['memberId'] as String,
           memberName: saved['memberName'] as String,
-          gymId:      saved['gymId'] as String,
+          gymId: saved['gymId'] as String,
         );
       },
     );

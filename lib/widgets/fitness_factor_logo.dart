@@ -243,10 +243,7 @@ class _MetalStroke extends StatelessWidget {
 }
 
 class _MiniPlate extends StatelessWidget {
-  const _MiniPlate({
-    required this.stroke,
-    required this.reverse,
-  });
+  const _MiniPlate({required this.stroke, required this.reverse});
 
   final double stroke;
   final bool reverse;

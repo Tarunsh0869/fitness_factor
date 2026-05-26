@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'onboarding_model.dart';
 
 class GenderScreen extends StatelessWidget {
@@ -14,13 +14,17 @@ class GenderScreen extends StatelessWidget {
         const Text(
           "What's your gender?",
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 52 / 2, fontWeight: FontWeight.w800, color: Color(0xFF1E1E1E)),
+          style: TextStyle(
+            fontSize: 52 / 2,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF2A323E),
+          ),
         ),
         const SizedBox(height: 12),
         const Text(
           'This helps us personalize your experience',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 36 / 2, color: Color(0xFF6F6F75)),
+          style: TextStyle(fontSize: 36 / 2, color: Color(0xFF535E62)),
         ),
         const SizedBox(height: 42),
         Expanded(
@@ -72,10 +76,14 @@ class _GenderBody extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             decoration: BoxDecoration(
-              color: selected ? const Color(0x14035C4A) : const Color(0xFFF4F6FB),
+              color: selected
+                  ? const Color(0x14035C4A)
+                  : const Color(0xFFF3F2ED),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: selected ? const Color(0xFF035C4A) : const Color(0xFFD0D2D8),
+                color: selected
+                    ? const Color(0xFF035C4A)
+                    : const Color(0xFFC3C8C6),
                 width: selected ? 2 : 1,
               ),
             ),
@@ -96,7 +104,9 @@ class _GenderBody extends StatelessWidget {
                         errorBuilder: (_, __, ___) => Icon(
                           Icons.accessibility_new_rounded,
                           size: 150,
-                          color: selected ? const Color(0xFF035C4A) : const Color(0xFFD0D2D8),
+                          color: selected
+                              ? const Color(0xFF035C4A)
+                              : const Color(0xFFC3C8C6),
                         ),
                       ),
                     ),
@@ -111,7 +121,11 @@ class _GenderBody extends StatelessWidget {
                             color: Color(0xFF035C4A),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.check, color: Colors.white, size: 18),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ),
                   ],
@@ -125,7 +139,7 @@ class _GenderBody extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 20,
-            color: selected ? const Color(0xFF1E1E1E) : const Color(0xFF6F6F75),
+            color: selected ? const Color(0xFF2A323E) : const Color(0xFF535E62),
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),

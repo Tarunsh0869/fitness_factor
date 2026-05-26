@@ -31,13 +31,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _pageBg = Color(0xFFF2F5FB);
-  static const _cardBg = Colors.white;
-  static const _ink = Color(0xFF14274A);
-  static const _muted = Color(0xFF6B7A97);
-  static const _accent = Color(0xFF1E72D8);
-  static const _accentDark = Color(0xFF082A63);
-  static const _success = Color(0xFF1F9D62);
+  static const _pageBg = Color(0xFFF9F7F2);
+  static const _cardBg = Color(0xFFF3F2ED);
+  static const _surfaceAlt = Color(0xFFE0E4E2);
+  static const _outline = Color(0xFFC3C8C6);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
+  static const _accent = Color(0xFF035C4A);
+  static const _accentDark = Color(0xFF02473A);
+  static const _success = Color(0xFF0A8F69);
+  static const _danger = Color(0xFFB3261E);
 
   bool _isInsideGym = false;
   bool _geoReady = false;
@@ -63,7 +66,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _init() async {
-    _sessionSub = AttendanceService.openSessionStream(widget.memberId).listen((session) {
+    _sessionSub = AttendanceService.openSessionStream(widget.memberId).listen((
+      session,
+    ) {
       if (!mounted) return;
       setState(() {
         _openSession = session;
@@ -79,7 +84,9 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
 
-    _historySub = AttendanceService.historyStream(widget.memberId).listen((records) {
+    _historySub = AttendanceService.historyStream(widget.memberId).listen((
+      records,
+    ) {
       if (!mounted) return;
       setState(() => _history = records);
     });
@@ -157,7 +164,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted || _openSession == null) return;
       ExitConfirmationSheet.show(
         context,
-        sessionId: _openSession!.id.isEmpty ? 0 : int.tryParse(_openSession!.id) ?? 0,
+        sessionId: _openSession!.id.isEmpty
+            ? 0
+            : int.tryParse(_openSession!.id) ?? 0,
         onConfirm: _doCheckout,
         onDeny: () {
           _autoCheckoutTimer?.cancel();
@@ -217,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _openQuickMenu() async {
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: _cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
@@ -231,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCE4F5),
+                  color: _outline,
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
@@ -252,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.logout_rounded, color: Color(0xFFCB274A)),
+                leading: const Icon(Icons.logout_rounded, color: _danger),
                 title: const Text('Logout'),
                 onTap: () {
                   Navigator.pop(context);
@@ -270,7 +279,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Duration? _averageDuration() {
     final closed = _history.where((r) => r.duration != null).toList();
     if (closed.isEmpty) return null;
-    final totalMinutes = closed.fold<int>(0, (sum, r) => sum + r.duration!.inMinutes);
+    final totalMinutes = closed.fold<int>(
+      0,
+      (sum, r) => sum + r.duration!.inMinutes,
+    );
     return Duration(minutes: (totalMinutes / closed.length).round());
   }
 
@@ -333,7 +345,10 @@ class _HomeScreenState extends State<HomeScreen> {
     const weeklyGoal = 5;
     final weeklyProgress = (_weekVisits / weeklyGoal).clamp(0.0, 1.0);
     final avgDuration = _averageDuration();
-    final burnedCalories = _history.fold<int>(0, (sum, r) => sum + _estimateCalories(r.duration));
+    final burnedCalories = _history.fold<int>(
+      0,
+      (sum, r) => sum + _estimateCalories(r.duration),
+    );
     final recentSessions = _history.take(4).toList();
 
     return Scaffold(
@@ -388,7 +403,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: _buildMetricCard(
                         icon: Icons.local_fire_department_outlined,
                         label: 'Burned',
-                        value: '${NumberFormat.decimalPattern().format(burnedCalories)} kcal',
+                        value:
+                            '${NumberFormat.decimalPattern().format(burnedCalories)} kcal',
                       ),
                     ),
                   ],
@@ -398,14 +414,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     const Text(
                       'Recent Sessions',
-                      style: TextStyle(color: _ink, fontSize: 18, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: _ink,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const Spacer(),
                     GestureDetector(
                       onTap: _openStats,
                       child: const Text(
                         'View All',
-                        style: TextStyle(color: _accent, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: _accent,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -472,7 +495,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: const Color(0xFFDDEAFF),
+              color: _surfaceAlt,
               borderRadius: BorderRadius.circular(19),
             ),
             alignment: Alignment.center,
@@ -498,7 +521,7 @@ class _HomeScreenState extends State<HomeScreen> {
         height: 168,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [_accentDark, Color(0xFF0F3F8E)],
+            colors: [_accentDark, _accent],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -516,20 +539,33 @@ class _HomeScreenState extends State<HomeScreen> {
             Positioned(
               right: -24,
               top: -16,
-              child: Icon(Icons.fitness_center_rounded, size: 120, color: Colors.white.withOpacity(0.08)),
+              child: Icon(
+                Icons.fitness_center_rounded,
+                size: 120,
+                color: Colors.white.withOpacity(0.08),
+              ),
             ),
             Positioned(
               right: 12,
               top: 12,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
-                  color: (_isInsideGym ? _success : const Color(0xFF7EA7E8)).withOpacity(0.22),
+                  color: (_isInsideGym ? _success : _muted).withOpacity(0.24),
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: Text(
-                  _isInsideGym ? 'Inside Gym' : (_geoReady ? 'Outside' : 'GPS Syncing'),
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                  _isInsideGym
+                      ? 'Inside Gym'
+                      : (_geoReady ? 'Outside' : 'GPS Syncing'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -544,17 +580,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white.withOpacity(0.16),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 28),
+                    child: const Icon(
+                      Icons.qr_code_scanner_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   const Text(
                     'Gym Check-In',
-                    style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     statusText,
-                    style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.85),
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
@@ -578,7 +625,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF9FB4D7).withOpacity(0.12),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -590,14 +637,29 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Weekly Progress', style: TextStyle(color: _muted, fontSize: 12)),
+                const Text(
+                  'Weekly Progress',
+                  style: TextStyle(color: _muted, fontSize: 12),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   '$visits/$goal',
-                  style: const TextStyle(color: _ink, fontSize: 36, fontWeight: FontWeight.w800, height: 0.95),
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 36,
+                    fontWeight: FontWeight.w800,
+                    height: 0.95,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                const Text('Sessions this week', style: TextStyle(color: _accent, fontSize: 13, fontWeight: FontWeight.w600)),
+                const Text(
+                  'Sessions this week',
+                  style: TextStyle(
+                    color: _accent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -610,7 +672,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 CircularProgressIndicator(
                   value: progress,
                   strokeWidth: 6,
-                  backgroundColor: const Color(0xFFE3ECFA),
+                  backgroundColor: _surfaceAlt,
                   valueColor: const AlwaysStoppedAnimation<Color>(_accent),
                 ),
                 const Icon(Icons.trending_up_rounded, color: _accent, size: 24),
@@ -640,7 +702,14 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 8),
           Text(label, style: const TextStyle(color: _muted, fontSize: 12)),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(color: _ink, fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(
+            value,
+            style: const TextStyle(
+              color: _ink,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -648,7 +717,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildRecentTile(AttendanceRecord record) {
     final calories = _estimateCalories(record.duration);
-    final subtitle = '${_relativeDay(record.checkedIn)} • ${DateFormat('hh:mm a').format(record.checkedIn)}';
+    final subtitle =
+        '${_relativeDay(record.checkedIn)} â€¢ ${DateFormat('hh:mm a').format(record.checkedIn)}';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -663,10 +733,14 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: const Color(0xFFE6F0FF),
+              color: _surfaceAlt,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(_workoutIcon(record.workoutType), color: _accent, size: 19),
+            child: Icon(
+              _workoutIcon(record.workoutType),
+              color: _accent,
+              size: 19,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -674,11 +748,20 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  (record.workoutType?.isNotEmpty ?? false) ? record.workoutType! : 'General Workout',
-                  style: const TextStyle(color: _ink, fontSize: 14, fontWeight: FontWeight.w700),
+                  (record.workoutType?.isNotEmpty ?? false)
+                      ? record.workoutType!
+                      : 'General Workout',
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(color: _muted, fontSize: 12)),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: _muted, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -688,7 +771,11 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Text(
                 _formatDuration(record.duration),
-                style: const TextStyle(color: _ink, fontSize: 14, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  color: _ink,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
@@ -717,11 +804,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _cardBg,
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF8EA7D0).withOpacity(0.2),
+                color: Colors.black.withOpacity(0.04),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -747,7 +834,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 48,
                           height: 30,
                           decoration: BoxDecoration(
-                            color: selected ? const Color(0xFFD9E9FF) : Colors.transparent,
+                            color: selected
+                                ? _accent.withOpacity(0.12)
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Icon(
@@ -761,7 +850,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           label,
                           style: TextStyle(
                             color: selected ? _accent : _muted,
-                            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                             fontSize: 11,
                           ),
                         ),

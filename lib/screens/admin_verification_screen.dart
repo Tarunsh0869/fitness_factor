@@ -17,19 +17,19 @@ class AdminVerificationScreen extends StatefulWidget {
 
 class _AdminVerificationScreenState extends State<AdminVerificationScreen>
     with SingleTickerProviderStateMixin {
-  static const _blue   = Color(0xFF00E5FF);
-  static const _green  = Color(0xFF39FF14);
-  static const _red    = Color(0xFFFF2D75);
-  static const _amber  = Color(0xFFFFD166);
-  static const _bg     = Color(0xFF05070D);
-  static const _card   = Color(0xFF101827);
-  static const _ink    = Color(0xFFF8FAFC);
-  static const _muted  = Color(0xFF94A3B8);
-  static const _subtle = Color(0xFF64748B);
+  static const _blue = Color(0xFF035C4A);
+  static const _green = Color(0xFF0A8F69);
+  static const _red = Color(0xFFB3261E);
+  static const _amber = Color(0xFFC7A66A);
+  static const _bg = Color(0xFFF9F7F2);
+  static const _card = Color(0xFFF3F2ED);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
+  static const _subtle = Color(0xFF7A8582);
 
   late final TabController _tabs;
-  List<Map<String, dynamic>> _pending  = [];
-  List<Map<String, dynamic>> _all      = [];
+  List<Map<String, dynamic>> _pending = [];
+  List<Map<String, dynamic>> _all = [];
   StreamSubscription? _pendingSub;
   StreamSubscription? _allSub;
   String? _processingId;
@@ -41,8 +41,9 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
-    _pendingSub = AdminService.pendingVerificationStream(widget.gymId)
-        .listen((list) {
+    _pendingSub = AdminService.pendingVerificationStream(widget.gymId).listen((
+      list,
+    ) {
       if (mounted) setState(() => _pending = list);
     });
     _allSub = AdminService.membersStream(widget.gymId).listen((list) {
@@ -59,27 +60,30 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
     super.dispose();
   }
 
-  List<Map<String, dynamic>> get _verified =>
-      _filterList(_all.where((m) => m['verificationStatus'] == 'verified').toList());
-  List<Map<String, dynamic>> get _rejected =>
-      _filterList(_all.where((m) => m['verificationStatus'] == 'rejected').toList());
-  
+  List<Map<String, dynamic>> get _verified => _filterList(
+    _all.where((m) => m['verificationStatus'] == 'verified').toList(),
+  );
+  List<Map<String, dynamic>> get _rejected => _filterList(
+    _all.where((m) => m['verificationStatus'] == 'rejected').toList(),
+  );
+
   List<Map<String, dynamic>> get _filteredPending => _filterList(_pending);
 
   List<Map<String, dynamic>> _filterList(List<Map<String, dynamic>> list) {
     if (_searchQuery.isEmpty) return list;
-    
+
     final query = _searchQuery.toLowerCase();
     return list.where((member) {
       final name = (member['name'] as String? ?? '').toLowerCase();
       final phone = (member['phone'] as String? ?? '').toLowerCase();
-      final membership = (member['membershipType'] as String? ?? '').toLowerCase();
+      final membership = (member['membershipType'] as String? ?? '')
+          .toLowerCase();
       final gender = (member['gender'] as String? ?? '').toLowerCase();
-      
+
       return name.contains(query) ||
-             phone.contains(query) ||
-             membership.contains(query) ||
-             gender.contains(query);
+          phone.contains(query) ||
+          membership.contains(query) ||
+          gender.contains(query);
     }).toList();
   }
 
@@ -89,17 +93,17 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
 
   Future<void> _handleAction(String memberId, String status) async {
     if (_processingId == memberId) return; // Prevent double tap
-    
+
     setState(() {
       _processingId = memberId;
       _processingStatus = status;
     });
-    
+
     try {
       await _setStatus(memberId, status);
-      
+
       if (!mounted) return;
-      
+
       // Show success feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -109,13 +113,15 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
           ),
           backgroundColor: status == 'verified' ? _green : _red,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       // Show error feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -125,7 +131,9 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
           ),
           backgroundColor: _red,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           duration: const Duration(seconds: 3),
         ),
       );
@@ -182,10 +190,7 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
                   'Apply action to all ${_filteredPending.length} pending members',
-                  style: TextStyle(
-                    color: _muted,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: _muted, fontSize: 13),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -224,7 +229,7 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       backgroundColor: _bg,
                     ),
@@ -257,7 +262,9 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
           content: const Text('Multi-select coming soon!'),
           backgroundColor: _blue,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     }
@@ -294,7 +301,7 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
 
     if (confirm == true) {
       if (!mounted) return;
-      
+
       // Show processing indicator
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -328,7 +335,7 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
       }
 
       if (!mounted) return;
-      
+
       // Show completion message
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -376,7 +383,7 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
 
     if (confirm == true) {
       if (!mounted) return;
-      
+
       // Show processing indicator
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -410,7 +417,7 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
       }
 
       if (!mounted) return;
-      
+
       // Show completion message
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -435,21 +442,26 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
         backgroundColor: _bg,
         foregroundColor: _ink,
         elevation: 0,
-        title: Text('Member Verification (${_pending.length} pending)',
-            style: const TextStyle(fontWeight: FontWeight.w700, color: _ink)),
+        title: Text(
+          'Member Verification (${_pending.length} pending)',
+          style: const TextStyle(fontWeight: FontWeight.w700, color: _ink),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(110),
           child: Column(
             children: [
               // Search Bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 child: Container(
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _subtle.withOpacity(0.2)),
+                    color: _card,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFC3C8C6)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.04),
@@ -483,7 +495,11 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                       ),
                       if (_searchQuery.isNotEmpty)
                         IconButton(
-                          icon: Icon(Icons.clear_outlined, color: _subtle, size: 18),
+                          icon: Icon(
+                            Icons.clear_outlined,
+                            color: _subtle,
+                            size: 18,
+                          ),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {
@@ -505,17 +521,23 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                 unselectedLabelColor: _muted,
                 indicatorColor: _blue,
                 indicatorSize: TabBarIndicatorSize.label,
-                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                ),
                 tabs: [
                   Tab(
-                    icon: _pending.isEmpty 
-                      ? const Icon(Icons.pending_outlined, size: 18)
-                      : Badge(
-                          smallSize: 6,
-                          backgroundColor: _amber,
-                          child: const Icon(Icons.pending_outlined, size: 18),
-                        ),
+                    icon: _pending.isEmpty
+                        ? const Icon(Icons.pending_outlined, size: 18)
+                        : Badge(
+                            smallSize: 6,
+                            backgroundColor: _amber,
+                            child: const Icon(Icons.pending_outlined, size: 18),
+                          ),
                     text: 'Pending (${_filteredPending.length})',
                   ),
                   Tab(
@@ -550,15 +572,20 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                 borderRadius: BorderRadius.circular(16),
               ),
               icon: const Icon(Icons.verified_outlined, size: 20),
-              label: const Text('Bulk Actions', style: TextStyle(fontWeight: FontWeight.w600)),
+              label: const Text(
+                'Bulk Actions',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
-  Widget _memberList(List<Map<String, dynamic>> members,
-      {required bool showActions}) {
+  Widget _memberList(
+    List<Map<String, dynamic>> members, {
+    required bool showActions,
+  }) {
     if (members.isEmpty) {
       return Center(
         child: Column(
@@ -573,18 +600,26 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                 border: Border.all(color: _subtle.withOpacity(0.2), width: 1.5),
               ),
               child: Icon(
-                _searchQuery.isNotEmpty ? Icons.search_off_outlined :
-                  (showActions ? Icons.pending_actions_outlined : 
-                    (members == _verified ? Icons.verified_outlined : Icons.block_outlined)),
+                _searchQuery.isNotEmpty
+                    ? Icons.search_off_outlined
+                    : (showActions
+                          ? Icons.pending_actions_outlined
+                          : (members == _verified
+                                ? Icons.verified_outlined
+                                : Icons.block_outlined)),
                 color: _subtle.withOpacity(0.5),
                 size: 36,
               ),
             ),
             const SizedBox(height: 20),
             Text(
-              _searchQuery.isNotEmpty ? 'No Search Results' :
-                (showActions ? 'No Pending Verifications' : 
-                  (members == _verified ? 'No Verified Members' : 'No Rejected Members')),
+              _searchQuery.isNotEmpty
+                  ? 'No Search Results'
+                  : (showActions
+                        ? 'No Pending Verifications'
+                        : (members == _verified
+                              ? 'No Verified Members'
+                              : 'No Rejected Members')),
               style: TextStyle(
                 color: _ink,
                 fontSize: 16,
@@ -593,19 +628,21 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              _searchQuery.isNotEmpty ? 'No members match "$_searchQuery"' :
-                (showActions ? 'All members have been reviewed' : 
-                  'Check back later for updates'),
-              style: TextStyle(
-                color: _muted,
-                fontSize: 13,
-              ),
+              _searchQuery.isNotEmpty
+                  ? 'No members match "$_searchQuery"'
+                  : (showActions
+                        ? 'All members have been reviewed'
+                        : 'Check back later for updates'),
+              style: TextStyle(color: _muted, fontSize: 13),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             if (showActions && _searchQuery.isEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: _blue.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
@@ -618,14 +655,21 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                     const SizedBox(width: 6),
                     Text(
                       'Pull down to refresh',
-                      style: TextStyle(color: _blue, fontSize: 12, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        color: _blue,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
               ),
             if (_searchQuery.isNotEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: _blue.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
@@ -645,7 +689,11 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                       const SizedBox(width: 6),
                       Text(
                         'Clear search',
-                        style: TextStyle(color: _blue, fontSize: 12, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          color: _blue,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -662,50 +710,57 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
         setState(() {});
       },
       color: _blue,
-      backgroundColor: Colors.white,
+      backgroundColor: _card,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: members.length,
         separatorBuilder: (_, i) => const SizedBox(height: 8),
-        itemBuilder: (_, i) => _memberTile(members[i], showActions: showActions),
+        itemBuilder: (_, i) =>
+            _memberTile(members[i], showActions: showActions),
       ),
     );
   }
 
   Widget _memberTile(Map<String, dynamic> m, {required bool showActions}) {
-    final name       = m['name']           as String? ?? '—';
-    final phone      = m['phone']          as String? ?? '—';
+    final name = m['name'] as String? ?? '—';
+    final phone = m['phone'] as String? ?? '—';
     final membership = m['membershipType'] as String? ?? 'Basic';
-    final gender     = m['gender']         as String? ?? '—';
-    final vs         = m['verificationStatus'] as String? ?? 'pending';
+    final gender = m['gender'] as String? ?? '—';
+    final vs = m['verificationStatus'] as String? ?? 'pending';
 
     final membershipColors = {
-      'Basic':   _blue,
+      'Basic': _blue,
       'Premium': _amber,
-      'VIP':     const Color(0xFFB967FF),
+      'VIP': const Color(0xFF535E62),
     };
     final mColor = membershipColors[membership] ?? _blue;
 
-    final vsColor = vs == 'verified' ? _green
-        : vs == 'rejected' ? _red : _amber;
+    final vsColor = vs == 'verified'
+        ? _green
+        : vs == 'rejected'
+        ? _red
+        : _amber;
 
     // Parse join date
     String joinedStr = '—';
     try {
       final raw = m['createdAt'];
       if (raw != null) {
-        final dt = raw is DateTime ? raw
-            : DateTime.tryParse(raw.toString());
+        final dt = raw is DateTime ? raw : DateTime.tryParse(raw.toString());
         if (dt != null) joinedStr = DateFormat('MMM d, yyyy').format(dt);
       }
     } catch (_) {}
 
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => AdminMemberDetailScreen(
-          memberId: m['id'] as String, gymId: widget.gymId,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AdminMemberDetailScreen(
+            memberId: m['id'] as String,
+            gymId: widget.gymId,
+          ),
         ),
-      )),
+      ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
@@ -716,10 +771,10 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
           border: vs == 'pending'
               ? Border.all(color: _amber.withOpacity(0.3), width: 1.5)
               : vs == 'verified'
-                ? Border.all(color: _green.withOpacity(0.2), width: 1)
-                : vs == 'rejected'
-                  ? Border.all(color: _red.withOpacity(0.2), width: 1)
-                  : null,
+              ? Border.all(color: _green.withOpacity(0.2), width: 1)
+              : vs == 'rejected'
+              ? Border.all(color: _red.withOpacity(0.2), width: 1)
+              : null,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(vs == 'pending' ? 0.06 : 0.04),
@@ -793,7 +848,9 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
@@ -802,7 +859,9 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: mColor.withOpacity(0.3)),
+                              border: Border.all(
+                                color: mColor.withOpacity(0.3),
+                              ),
                             ),
                             child: Text(
                               membership,
@@ -839,7 +898,10 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                 const Spacer(),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -864,8 +926,8 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                         vs == 'verified'
                             ? Icons.verified_outlined
                             : vs == 'rejected'
-                                ? Icons.block_outlined
-                                : Icons.pending_outlined,
+                            ? Icons.block_outlined
+                            : Icons.pending_outlined,
                         color: vsColor,
                         size: 12,
                       ),
@@ -893,7 +955,9 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                       label: 'Verify',
                       icon: Icons.check_circle_outlined,
                       color: _green,
-                      isLoading: _processingId == m['id'] && _processingStatus == 'verified',
+                      isLoading:
+                          _processingId == m['id'] &&
+                          _processingStatus == 'verified',
                       onTap: () => _handleAction(m['id'] as String, 'verified'),
                     ),
                   ),
@@ -903,7 +967,9 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                       label: 'Reject',
                       icon: Icons.cancel_outlined,
                       color: _red,
-                      isLoading: _processingId == m['id'] && _processingStatus == 'rejected',
+                      isLoading:
+                          _processingId == m['id'] &&
+                          _processingStatus == 'rejected',
                       onTap: () => _handleAction(m['id'] as String, 'rejected'),
                     ),
                   ),
@@ -953,12 +1019,12 @@ class _BulkActionTile extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: color.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: color.withOpacity(0.15)),
             ),
             child: Row(
@@ -968,7 +1034,7 @@ class _BulkActionTile extends StatelessWidget {
                   height: 44,
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(icon, color: color, size: 22),
                 ),
@@ -988,10 +1054,7 @@ class _BulkActionTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: TextStyle(
-                          color: mutedColor,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: mutedColor, fontSize: 12),
                       ),
                     ],
                   ),
@@ -1039,7 +1102,7 @@ class _ActionButton extends StatelessWidget {
               color.withOpacity(isLoading ? 0.25 : 0.2),
             ],
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: color.withOpacity(isLoading ? 0.4 : 0.3),
             width: isLoading ? 1.5 : 1,
@@ -1060,10 +1123,7 @@ class _ActionButton extends StatelessWidget {
               SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: color,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2, color: color),
               )
             else
               Icon(icon, color: color, size: 16),

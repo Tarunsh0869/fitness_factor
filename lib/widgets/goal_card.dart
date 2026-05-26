@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class GoalCard extends StatelessWidget {
   const GoalCard({
@@ -26,10 +26,10 @@ class GoalCard extends StatelessWidget {
         height: 130,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF4F6FB),
+          color: const Color(0xFFF3F2ED),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: selected ? const Color(0xFF1689F7) : Colors.transparent,
+            color: selected ? const Color(0xFF035C4A) : Colors.transparent,
             width: 1.7,
           ),
           boxShadow: const [
@@ -46,11 +46,8 @@ class GoalCard extends StatelessWidget {
             Container(
               width: 62,
               height: 62,
-              decoration: BoxDecoration(
-                color: tint,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: const Color(0xFF1E1E1E), size: 30),
+              decoration: BoxDecoration(color: tint, shape: BoxShape.circle),
+              child: Icon(icon, color: const Color(0xFF2A323E), size: 30),
             ),
             const SizedBox(height: 12),
             Text(
@@ -59,7 +56,9 @@ class GoalCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: selected ? const Color(0xFF1689F7) : const Color(0xFF1E1E1E),
+                color: selected
+                    ? const Color(0xFF035C4A)
+                    : const Color(0xFF2A323E),
               ),
             ),
           ],

@@ -1,6 +1,7 @@
 import 'api_auth_response.dart';
 import 'api_auth_client_stub.dart'
-    if (dart.library.io) 'api_auth_client_io.dart' as client;
+    if (dart.library.io) 'api_auth_client_io.dart'
+    as client;
 
 class ApiAuthClient {
   static Future<ApiAuthResponse?> postJson({

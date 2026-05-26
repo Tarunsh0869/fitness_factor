@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../widgets/option_card.dart';
 import 'onboarding_model.dart';
 
@@ -24,13 +24,17 @@ class TrackingReasonScreen extends StatelessWidget {
         const Text(
           'Why do you track your workouts?',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Color(0xFF1E1E1E)),
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF2A323E),
+          ),
         ),
         const SizedBox(height: 12),
         const Text(
           "Choose as many as you'd like.",
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 18, color: Color(0xFF6F6F75)),
+          style: TextStyle(fontSize: 18, color: Color(0xFF535E62)),
         ),
         const SizedBox(height: 16),
         Expanded(
@@ -50,10 +54,14 @@ class TrackingReasonScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: selected ? const Color(0xFF1689F7) : const Color(0xFFCDCFD5),
+                      color: selected
+                          ? const Color(0xFF035C4A)
+                          : const Color(0xFFC3C8C6),
                       width: 1.6,
                     ),
-                    color: selected ? const Color(0x141689F7) : Colors.transparent,
+                    color: selected
+                        ? const Color(0x141689F7)
+                        : Colors.transparent,
                   ),
                 ),
               );

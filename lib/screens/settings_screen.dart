@@ -27,24 +27,27 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  static const _blue  = Color(0xFF00E5FF);
-  static const _red   = Color(0xFFFF2D75);
-  static const _bg    = Color(0xFF05070D);
-  static const _card  = Color(0xFF101827);
-  static const _ink   = Color(0xFFF8FAFC);
-  static const _muted = Color(0xFF94A3B8);
+  static const _blue = Color(0xFF035C4A);
+  static const _red = Color(0xFFB3261E);
+  static const _bg = Color(0xFFF9F7F2);
+  static const _card = Color(0xFFF3F2ED);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
 
   Map<String, dynamic>? _member;
   bool _loading = true;
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+  }
 
   Future<void> _load() async {
     final member = await AttendanceService.getMember(widget.memberId);
     if (mounted) {
       setState(() {
-        _member  = member;
+        _member = member;
         _loading = false;
       });
     }
@@ -57,19 +60,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => EditProfileScreen(
-          memberId:          widget.memberId,
-          initialName:       m['name']            ?? '',
-          initialEmergency:  m['emergencyContact'] ?? '',
-          initialMembership: m['membershipType']   ?? 'Basic',
+          memberId: widget.memberId,
+          initialName: m['name'] ?? '',
+          initialEmergency: m['emergencyContact'] ?? '',
+          initialMembership: m['membershipType'] ?? 'Basic',
         ),
       ),
     );
     if (result != null) {
       setState(() => _member = {...?_member, ...result});
       await AuthPrefs.save(
-        memberId:   widget.memberId,
+        memberId: widget.memberId,
         memberName: result['name'],
-        gymId:      widget.gymId,
+        gymId: widget.gymId,
       );
     }
   }
@@ -79,10 +82,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: _card,
-        title: const Text('Log Out',
-            style: TextStyle(color: _ink, fontWeight: FontWeight.w700)),
-        content: Text('Are you sure you want to log out?',
-            style: TextStyle(color: _muted)),
+        title: const Text(
+          'Log Out',
+          style: TextStyle(color: _ink, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Are you sure you want to log out?',
+          style: TextStyle(color: _muted),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -90,8 +97,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Log Out',
-                style: TextStyle(color: _red, fontWeight: FontWeight.w700)),
+            child: const Text(
+              'Log Out',
+              style: TextStyle(color: _red, fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -100,8 +109,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await AttendanceService.logout();
     await AuthPrefs.clear();
     if (!mounted) return;
-    Navigator.pushAndRemoveUntil(context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
   }
 
   @override
@@ -111,12 +123,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         backgroundColor: _bg,
         foregroundColor: _ink,
-        title: const Text('Settings',
-            style: TextStyle(fontWeight: FontWeight.w700, color: _ink)),
+        title: const Text(
+          'Settings',
+          style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
+        ),
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Divider(height: 1, color: const Color(0xFF243244)),
+          child: Divider(height: 1, color: const Color(0xFFC3C8C6)),
         ),
       ),
       body: _loading
@@ -131,30 +145,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.bar_chart_outlined,
                   label: 'My Stats & Analytics',
                   color: _blue,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => StatsScreen(memberId: widget.memberId),
-                  )),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => StatsScreen(memberId: widget.memberId),
+                    ),
+                  ),
                 ),
                 _actionTile(
                   icon: Icons.edit_outlined,
                   label: 'Edit Profile',
-                  color: const Color(0xFFB967FF),
+                  color: const Color(0xFF535E62),
                   onTap: _openEditProfile,
                 ),
                 _actionTile(
                   icon: Icons.feedback_outlined,
                   label: 'Send Feedback / Report Issue',
-                  color: const Color(0xFFFFD166),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => MemberFeedbackScreen(
-                      memberId: widget.memberId,
-                      gymId:    widget.gymId,
+                  color: const Color(0xFFC7A66A),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MemberFeedbackScreen(
+                        memberId: widget.memberId,
+                        gymId: widget.gymId,
+                      ),
                     ),
-                  )),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
-                  width: double.infinity, height: 50,
+                  width: double.infinity,
+                  height: 50,
                   child: OutlinedButton.icon(
                     onPressed: _logout,
                     icon: const Icon(Icons.logout_outlined, size: 18),
@@ -163,7 +184,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       foregroundColor: _red,
                       side: const BorderSide(color: _red, width: 1.5),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
@@ -182,25 +204,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
         color: _card,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _blue.withOpacity(0.2)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05),
-            blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 60, height: 60,
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [_blue, Color(0xFF1D4ED8)],
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                colors: [_blue, Color(0xFF02473A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: const TextStyle(color: Colors.white, fontSize: 26,
-                    fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ),
@@ -209,11 +241,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(color: _ink, fontSize: 18,
-                    fontWeight: FontWeight.w700)),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(widget.memberPhone.isEmpty ? 'No phone' : widget.memberPhone,
-                    style: TextStyle(color: _muted, fontSize: 13)),
+                Text(
+                  widget.memberPhone.isEmpty ? 'No phone' : widget.memberPhone,
+                  style: TextStyle(color: _muted, fontSize: 13),
+                ),
               ],
             ),
           ),
@@ -228,9 +268,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _sectionLabel(String label) => Padding(
     padding: const EdgeInsets.only(bottom: 10),
-    child: Text(label.toUpperCase(),
-        style: const TextStyle(color: _blue, fontSize: 11,
-            fontWeight: FontWeight.w700, letterSpacing: 1.4)),
+    child: Text(
+      label.toUpperCase(),
+      style: const TextStyle(
+        color: _blue,
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.4,
+      ),
+    ),
   );
 
   Widget _actionTile({
@@ -248,13 +294,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: _card,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: color.withOpacity(0.15)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03),
-              blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              width: 36, height: 36,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(10),
@@ -262,14 +314,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Icon(icon, color: color, size: 18),
             ),
             const SizedBox(width: 12),
-            Expanded(child: Text(label,
-                style: const TextStyle(color: _ink, fontSize: 14,
-                    fontWeight: FontWeight.w600))),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: _ink,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
             Icon(Icons.chevron_right, color: _muted, size: 20),
           ],
         ),
       ),
     );
   }
-
 }

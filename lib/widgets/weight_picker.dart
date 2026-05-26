@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class WeightPicker extends StatelessWidget {
   const WeightPicker({
@@ -30,7 +30,7 @@ class WeightPicker extends StatelessWidget {
           height: 48,
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: const Color(0xFFF0F2F7),
+            color: const Color(0xFFF3F2ED),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
@@ -45,7 +45,7 @@ class WeightPicker extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 24),
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F6FB),
+            color: const Color(0xFFF3F2ED),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -55,7 +55,7 @@ class WeightPicker extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 40,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1E1E1E),
+                  color: Color(0xFF2A323E),
                 ),
               ),
               const SizedBox(height: 12),
@@ -69,9 +69,11 @@ class WeightPicker extends StatelessWidget {
                         perspective: 0.003,
                         diameterRatio: 1.6,
                         physics: const FixedExtentScrollPhysics(),
-                        controller:
-                            FixedExtentScrollController(initialItem: majors.indexOf(major)),
-                        onSelectedItemChanged: (index) => onMajorChanged(majors[index]),
+                        controller: FixedExtentScrollController(
+                          initialItem: majors.indexOf(major),
+                        ),
+                        onSelectedItemChanged: (index) =>
+                            onMajorChanged(majors[index]),
                         childDelegate: ListWheelChildBuilderDelegate(
                           childCount: majors.length,
                           builder: (context, index) {
@@ -83,9 +85,11 @@ class WeightPicker extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: selected ? 30 : 22,
                                   color: selected
-                                      ? const Color(0xFF1E1E1E)
-                                      : const Color(0xFFB2B5BC),
-                                  fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                                      ? const Color(0xFF2A323E)
+                                      : const Color(0xFF7A8582),
+                                  fontWeight: selected
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
                                 ),
                               ),
                             );
@@ -99,7 +103,9 @@ class WeightPicker extends StatelessWidget {
                         perspective: 0.003,
                         diameterRatio: 1.6,
                         physics: const FixedExtentScrollPhysics(),
-                        controller: FixedExtentScrollController(initialItem: decimal),
+                        controller: FixedExtentScrollController(
+                          initialItem: decimal,
+                        ),
                         onSelectedItemChanged: onDecimalChanged,
                         childDelegate: ListWheelChildBuilderDelegate(
                           childCount: 10,
@@ -111,9 +117,11 @@ class WeightPicker extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: selected ? 30 : 22,
                                   color: selected
-                                      ? const Color(0xFF1E1E1E)
-                                      : const Color(0xFFB2B5BC),
-                                  fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                                      ? const Color(0xFF2A323E)
+                                      : const Color(0xFF7A8582),
+                                  fontWeight: selected
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
                                 ),
                               ),
                             );
@@ -145,7 +153,9 @@ class WeightPicker extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? const Color(0xFF1E1E1E) : const Color(0xFF8D9198),
+              color: selected
+                  ? const Color(0xFF2A323E)
+                  : const Color(0xFF7A8582),
               fontWeight: FontWeight.w700,
             ),
           ),

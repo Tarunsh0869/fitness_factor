@@ -29,10 +29,16 @@ class GeoService {
 
     return initialPosition
         .mergeWith([positionStream])
-        .map((pos) =>
-            Geolocator.distanceBetween(
-                pos.latitude, pos.longitude, gymLat, gymLng) <=
-            radiusMeters)
+        .map(
+          (pos) =>
+              Geolocator.distanceBetween(
+                pos.latitude,
+                pos.longitude,
+                gymLat,
+                gymLng,
+              ) <=
+              radiusMeters,
+        )
         .debounceTime(const Duration(seconds: 30))
         .distinct();
   }
@@ -58,8 +64,9 @@ class GeoService {
   static Future<Position?> currentPosition() async {
     try {
       return await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
     } catch (_) {
       return null;
