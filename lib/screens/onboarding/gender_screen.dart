@@ -29,6 +29,7 @@ class GenderScreen extends StatelessWidget {
               Expanded(
                 child: _GenderBody(
                   label: 'Male',
+                  assetPath: 'assets/onboarding/gender/male.png',
                   selected: model.gender == Gender.male,
                   onTap: () => model.setGender(Gender.male),
                 ),
@@ -37,6 +38,7 @@ class GenderScreen extends StatelessWidget {
               Expanded(
                 child: _GenderBody(
                   label: 'Female',
+                  assetPath: 'assets/onboarding/gender/female.png',
                   selected: model.gender == Gender.female,
                   onTap: () => model.setGender(Gender.female),
                 ),
@@ -52,49 +54,83 @@ class GenderScreen extends StatelessWidget {
 class _GenderBody extends StatelessWidget {
   const _GenderBody({
     required this.label,
+    required this.assetPath,
     required this.selected,
     required this.onTap,
   });
 
   final String label;
+  final String assetPath;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Column(
-        children: [
-          Expanded(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: selected ? const Color(0x10F97316) : Colors.transparent,
+    return Column(
+      children: [
+        Expanded(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            decoration: BoxDecoration(
+              color: selected ? const Color(0x14035C4A) : const Color(0xFFF4F6FB),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: selected ? const Color(0xFF035C4A) : const Color(0xFFD0D2D8),
+                width: selected ? 2 : 1,
               ),
-              child: Center(
-                child: Icon(
-                  Icons.accessibility_new_rounded,
-                  size: 210,
-                  color: selected ? const Color(0xFFCF5B45) : const Color(0xFFD0D2D8),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: onTap,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Image.asset(
+                        assetPath,
+                        fit: BoxFit.contain,
+                        alignment: Alignment.bottomCenter,
+                        errorBuilder: (_, __, ___) => Icon(
+                          Icons.accessibility_new_rounded,
+                          size: 150,
+                          color: selected ? const Color(0xFF035C4A) : const Color(0xFFD0D2D8),
+                        ),
+                      ),
+                    ),
+                    if (selected)
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF035C4A),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.check, color: Colors.white, size: 18),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 20,
-              color: selected ? const Color(0xFF1E1E1E) : const Color(0xFF6F6F75),
-              fontWeight: FontWeight.w500,
-            ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 20,
+            color: selected ? const Color(0xFF1E1E1E) : const Color(0xFF6F6F75),
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
-          const SizedBox(height: 12),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 }

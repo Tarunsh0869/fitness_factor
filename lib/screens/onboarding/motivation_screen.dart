@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class _MotivationAssets {
-  static const progress = 'assets/onboarding/welcome/pngwing.com (9).png';
-  static const push = 'assets/onboarding/welcome/pngwing.com (10).png';
-  static const rightPlace = 'assets/onboarding/welcome/pngwing.com (11).png';
+  static const progress = 'assets/onboarding/motivation/progress.png';
+  static const push = 'assets/onboarding/motivation/push.png';
+  static const rightPlace = 'assets/onboarding/motivation/right_place.png';
 }
 
 class MotivationScreen extends StatelessWidget {
@@ -210,21 +210,30 @@ class _MotivationImageCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
-      child: Image.asset(
-        assetPath,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) {
-          return DecoratedBox(
-            decoration: const BoxDecoration(color: Color(0xFFF4F6FB)),
-            child: Center(
-              child: Icon(
-                fallbackIcon,
-                size: fallbackIconSize,
-                color: const Color(0xFF1689F7),
-              ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const DecoratedBox(
+            decoration: BoxDecoration(color: Color(0xFFF4F6FB)),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Image.asset(
+              assetPath,
+              fit: BoxFit.contain,
+              alignment: Alignment.center,
+              errorBuilder: (_, __, ___) {
+                return Center(
+                  child: Icon(
+                    fallbackIcon,
+                    size: fallbackIconSize,
+                    color: const Color(0xFF1689F7),
+                  ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

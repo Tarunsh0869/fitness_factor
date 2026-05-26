@@ -36,6 +36,6 @@ Notes:
 
 Current project mapping (already wired):
 - Welcome currently uses:
-  pngwing.com.png and pngwing.com (1).png ... pngwing.com (11).png
-- Motivation currently reuses:
-  pngwing.com (9).png, pngwing.com (10).png, pngwing.com (11).png
+  tile_01.png ... tile_12.png
+- Motivation currently uses:
+  progress.png, push.png, right_place.png

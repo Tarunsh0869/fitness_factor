@@ -126,7 +126,7 @@ class _HeroCollage extends StatelessWidget {
     int tone,
     int imageIndex,
   ) {
-    final fallback = DecoratedBox(
+    final background = DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         gradient: LinearGradient(
@@ -145,10 +145,24 @@ class _HeroCollage extends StatelessWidget {
         child: SizedBox(
           width: width,
           height: height,
-          child: Image.asset(
-            _images[imageIndex],
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => fallback,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              background,
+              Padding(
+                padding: const EdgeInsets.all(4),
+                child: Image.asset(
+                  _images[imageIndex],
+                  fit: BoxFit.contain,
+                  alignment: Alignment.center,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.white70,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
