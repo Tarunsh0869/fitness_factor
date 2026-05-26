@@ -1,0 +1,6 @@
+Put your provided logo image here with this exact filename:
+
+fitness_factor_logo.png
+
+Target path:
+assets/logo/fitness_factor_logo.png

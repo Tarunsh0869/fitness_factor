@@ -33,7 +33,7 @@ class OnboardingModel extends ChangeNotifier {
   int weightMajor = 75;
   int weightDecimal = 0;
 
-  static const int totalSteps = 13;
+  static const int totalSteps = 12;
 
   double get progress => (step + 1) / totalSteps;
 
@@ -59,7 +59,6 @@ class OnboardingModel extends ChangeNotifier {
       case 9:
       case 10:
       case 11:
-      case 12:
         return true;
       default:
         return false;

@@ -1,7 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../widgets/onboarding_progress_bar.dart';
 import '../../widgets/primary_button.dart';
-import 'create_account_screen.dart';
+import '../login_screen.dart';
 import 'equipment_screen.dart';
 import 'experience_screen.dart';
 import 'focus_area_screen.dart';
@@ -42,7 +42,12 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   void _continue() {
     if (_model.step < OnboardingModel.totalSteps - 1) {
       _model.nextStep();
+      return;
     }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
 
   @override
@@ -123,10 +128,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         return const MotivationScreen(key: ValueKey(10), index: 1);
       case 11:
         return const MotivationScreen(key: ValueKey(11), index: 2);
-      case 12:
-        return const CreateAccountScreen(key: ValueKey(12));
       default:
         return const SizedBox.shrink();
     }
   }
 }
+

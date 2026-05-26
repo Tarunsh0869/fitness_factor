@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/attendance_service.dart';
 import '../services/firebase_service.dart';
 import '../services/auth_prefs.dart';
+import '../widgets/fitness_factor_logo.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 import 'admin_login_screen.dart';
@@ -16,13 +17,14 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  static const _blue   = Color(0xFF00E5FF);
-  static const _blueDk = Color(0xFF7C3DFF);
-  static const _bg     = Color(0xFF05070D);
-  static const _card   = Color(0xFF101827);
-  static const _ink    = Color(0xFFF8FAFC);
-  static const _muted  = Color(0xFF94A3B8);
-  static const _red    = Color(0xFFFF2D75);
+  static const _blue = Color(0xFF035C4A);
+  static const _blueDk = Color(0xFF02473A);
+  static const _bg = Color(0xFFF9F7F2);
+  static const _card = Color(0xFFF3F2ED);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
+  static const _red = Color(0xFFB3261E);
+  static const _outline = Color(0xFFC3C8C6);
 
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -140,26 +142,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 64),
-                  GestureDetector(
-                    onLongPress: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const AdminLoginScreen())),
-                    child: Container(
-                      width: 64, height: 64,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [_blue, _blueDk],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _blue.withOpacity(0.3),
-                            blurRadius: 20, offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.fitness_center, color: Colors.white, size: 30),
+                  Center(
+                    child: GestureDetector(
+                      onLongPress: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const AdminLoginScreen())),
+                      child: const FitnessFactorLogo(size: 96),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -175,11 +162,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     text: TextSpan(
                       style: const TextStyle(fontSize: 15, height: 1.6),
                       children: [
-                        TextSpan(text: 'Firebase ', style: TextStyle(color: _muted)),
-                        const TextSpan(text: 'secure login',
-                            style: TextStyle(color: _blue, fontWeight: FontWeight.w600)),
-                        TextSpan(text: '.\nUse email/password or Google to continue.',
-                            style: TextStyle(color: _muted)),
+                        const TextSpan(
+                          text: 'Welcome back to Fitness Factor',
+                          style: TextStyle(color: _blue, fontWeight: FontWeight.w600),
+                        ),
+                        TextSpan(
+                          text: '.\nUse email/password or Google to continue.',
+                          style: TextStyle(color: _muted),
+                        ),
                       ],
                     ),
                   ),
@@ -266,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       label: Text(_googleLoading ? 'Opening Google...' : 'Continue with Google'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: _ink,
-                        side: const BorderSide(color: Color(0xFF243244)),
+                        side: const BorderSide(color: _outline),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                     ),
@@ -313,11 +303,11 @@ class _LoginScreenState extends State<LoginScreen> {
       fillColor: _card,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF243244)),
+        borderSide: const BorderSide(color: _outline),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF243244)),
+        borderSide: const BorderSide(color: _outline),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),

@@ -6,6 +6,7 @@ import '../config/basic_gym.dart';
 import '../services/attendance_service.dart';
 import '../services/firebase_service.dart';
 import '../services/auth_prefs.dart';
+import '../widgets/fitness_factor_logo.dart';
 import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -25,13 +26,17 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  static const _blue   = Color(0xFF00E5FF);
-  static const _blueDk = Color(0xFF7C3DFF);
-  static const _red    = Color(0xFFFF2D75);
-  static const _bg     = Color(0xFF05070D);
-  static const _card   = Color(0xFF101827);
-  static const _ink    = Color(0xFFF8FAFC);
-  static const _muted  = Color(0xFF94A3B8);
+  static const _blue = Color(0xFF035C4A);
+  static const _blueDk = Color(0xFF02473A);
+  static const _red = Color(0xFFB3261E);
+  static const _bg = Color(0xFFF9F7F2);
+  static const _card = Color(0xFFF3F2ED);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
+  static const _outline = Color(0xFFC3C8C6);
+  static const _outlineDark = Color(0xFFA0A8A5);
+  static const _surface = Color(0xFFE0E4E2);
+  static const _success = Color(0xFF0A8F69);
 
   final _formKey         = GlobalKey<FormState>();
   final _nameCtrl        = TextEditingController();
@@ -108,9 +113,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       lastDate: DateTime.now().subtract(const Duration(days: 365 * 10)),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.dark(
+          colorScheme: const ColorScheme.light(
             primary: _blue,
-            onPrimary: _bg,
+            onPrimary: Colors.white,
             surface: _card,
             onSurface: _ink,
           ),
@@ -279,20 +284,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           // Header
                           Row(
                             children: [
-                              Container(
-                                width: 48, height: 48,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                      colors: [_blue, _blueDk]),
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: [
-                                    BoxShadow(color: _blue.withOpacity(0.3),
-                                        blurRadius: 12, offset: const Offset(0, 5)),
-                                  ],
-                                ),
-                                child: const Icon(Icons.fitness_center,
-                                    color: Colors.white, size: 22),
-                              ),
+                              const FitnessFactorLogo(size: 48),
                               const SizedBox(width: 12),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,7 +385,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     : 'Use Google Account'),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: _ink,
-                                  side: const BorderSide(color: Color(0xFF243244)),
+                                  side: const BorderSide(color: _outline),
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14)),
                                 ),
@@ -432,7 +424,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 border: Border.all(
                                   color: _dob != null
                                       ? _blue.withOpacity(0.5)
-                                      : const Color(0xFF243244),
+                                      : _outline,
                                 ),
                               ),
                               child: Row(
@@ -489,7 +481,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       color: sel ? _blue.withOpacity(0.08) : _card,
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: sel ? _blue : const Color(0xFF243244),
+                                        color: sel ? _blue : _outline,
                                         width: sel ? 1.5 : 1,
                                       ),
                                     ),
@@ -603,12 +595,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
                                 borderSide:
-                                    BorderSide(color: const Color(0xFF243244)),
+                                    BorderSide(color: _outline),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
                                 borderSide:
-                                    BorderSide(color: const Color(0xFF243244)),
+                                    BorderSide(color: _outline),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -636,11 +628,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: Row(
                                 children: [
                                   const Icon(Icons.check_circle,
-                                      color: Color(0xFF39FF14), size: 14),
+                                      color: _success, size: 14),
                                   const SizedBox(width: 6),
                                   Text(_maskAadhaar(_aadhaarCtrl.text),
                                       style: const TextStyle(
-                                        color: Color(0xFF39FF14), fontSize: 13,
+                                        color: _success, fontSize: 13,
                                         letterSpacing: 1.5,
                                         fontWeight: FontWeight.w600,
                                       )),
@@ -770,11 +762,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             fillColor: _card,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: const Color(0xFF243244)),
+              borderSide: BorderSide(color: _outline),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: const Color(0xFF243244)),
+              borderSide: BorderSide(color: _outline),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -815,7 +807,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           color: sel ? _blue.withOpacity(0.06) : _card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: sel ? _blue : const Color(0xFF243244),
+            color: sel ? _blue : _outline,
             width: sel ? 1.5 : 1,
           ),
         ),
@@ -824,7 +816,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Container(
               width: 42, height: 42,
               decoration: BoxDecoration(
-                color: sel ? _blue.withOpacity(0.12) : const Color(0xFF1E293B),
+                color: sel ? _blue.withOpacity(0.12) : _surface,
                 borderRadius: BorderRadius.circular(11),
               ),
               child: Icon(d['icon'] as IconData,
@@ -856,7 +848,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 shape: BoxShape.circle,
                 color: sel ? _blue : Colors.transparent,
                 border: Border.all(
-                    color: sel ? _blue : const Color(0xFF334155), width: 2),
+                    color: sel ? _blue : _outlineDark, width: 2),
               ),
               child: sel
                   ? const Icon(Icons.check, color: Colors.white, size: 12)
@@ -870,3 +862,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   String _age(DateTime dob) => '${DateTime.now().year - dob.year} yrs';
 }
+

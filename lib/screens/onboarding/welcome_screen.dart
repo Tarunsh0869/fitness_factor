@@ -70,6 +70,21 @@ class WelcomeScreen extends StatelessWidget {
 }
 
 class _HeroCollage extends StatelessWidget {
+  static const _images = [
+    'assets/onboarding/welcome/tile_01.png',
+    'assets/onboarding/welcome/tile_02.png',
+    'assets/onboarding/welcome/tile_03.png',
+    'assets/onboarding/welcome/tile_04.png',
+    'assets/onboarding/welcome/tile_05.png',
+    'assets/onboarding/welcome/tile_06.png',
+    'assets/onboarding/welcome/tile_07.png',
+    'assets/onboarding/welcome/tile_08.png',
+    'assets/onboarding/welcome/tile_09.png',
+    'assets/onboarding/welcome/tile_10.png',
+    'assets/onboarding/welcome/tile_11.png',
+    'assets/onboarding/welcome/tile_12.png',
+  ];
+
   final List<Color> tones = const [
     Color(0xFF343A40),
     Color(0xFF20242A),
@@ -85,37 +100,55 @@ class _HeroCollage extends StatelessWidget {
         final w = c.maxWidth;
         return Stack(
           children: [
-            _tile(0, 0, w * .24, 98, 0),
-            _tile(w * .28, 0, w * .24, 120, 1),
-            _tile(w * .56, 0, w * .24, 152, 2),
-            _tile(w * .84, 0, w * .16, 108, 3),
-            _tile(0, 108, w * .24, 160, 4),
-            _tile(w * .28, 128, w * .24, 180, 2),
-            _tile(w * .56, 180, w * .24, 180, 1),
-            _tile(w * .84, 136, w * .16, 120, 0),
-            _tile(0, 280, w * .24, 150, 3),
-            _tile(w * .28, 338, w * .24, 146, 4),
-            _tile(w * .56, 366, w * .24, 118, 0),
-            _tile(w * .84, 268, w * .16, 180, 2),
+            _tile(0, 0, w * .24, 98, 0, 0),
+            _tile(w * .28, 0, w * .24, 120, 1, 1),
+            _tile(w * .56, 0, w * .24, 152, 2, 2),
+            _tile(w * .84, 0, w * .16, 108, 3, 3),
+            _tile(0, 108, w * .24, 160, 4, 4),
+            _tile(w * .28, 128, w * .24, 180, 2, 5),
+            _tile(w * .56, 180, w * .24, 180, 1, 6),
+            _tile(w * .84, 136, w * .16, 120, 0, 7),
+            _tile(0, 280, w * .24, 150, 3, 8),
+            _tile(w * .28, 338, w * .24, 146, 4, 9),
+            _tile(w * .56, 366, w * .24, 118, 0, 10),
+            _tile(w * .84, 268, w * .16, 180, 2, 11),
           ],
         );
       },
     );
   }
 
-  Widget _tile(double left, double top, double width, double height, int tone) {
+  Widget _tile(
+    double left,
+    double top,
+    double width,
+    double height,
+    int tone,
+    int imageIndex,
+  ) {
+    final fallback = DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [tones[tone], tones[(tone + 1) % tones.length]],
+        ),
+      ),
+    );
+
     return Positioned(
       left: left,
       top: top,
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [tones[tone], tones[(tone + 1) % tones.length]],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: SizedBox(
+          width: width,
+          height: height,
+          child: Image.asset(
+            _images[imageIndex],
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => fallback,
           ),
         ),
       ),

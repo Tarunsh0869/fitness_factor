@@ -1,17 +1,17 @@
-// ignore_for_file: deprecated_member_use
-
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../models/attendance_record.dart';
 import '../services/attendance_service.dart';
-import '../services/geo_service.dart';
-import '../services/firebase_service.dart';
 import '../services/auth_prefs.dart';
+import '../services/firebase_service.dart';
+import '../services/geo_service.dart';
 import '../widgets/exit_confirmation_sheet.dart';
-import 'settings_screen.dart';
-import 'login_screen.dart';
 import 'attendance_form_screen.dart';
+import 'login_screen.dart';
+import 'settings_screen.dart';
 import 'stats_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -31,17 +31,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _blue   = Color(0xFF00E5FF);
-  static const _blueDk = Color(0xFF7C3DFF);
-  static const _green  = Color(0xFF39FF14);
-  static const _bg     = Color(0xFF05070D);
-  static const _card   = Color(0xFF101827);
-  static const _ink    = Color(0xFFF8FAFC);
-  static const _muted  = Color(0xFF94A3B8);
-  static const _subtle = Color(0xFF64748B);
+  static const _pageBg = Color(0xFFF2F5FB);
+  static const _cardBg = Colors.white;
+  static const _ink = Color(0xFF14274A);
+  static const _muted = Color(0xFF6B7A97);
+  static const _accent = Color(0xFF1E72D8);
+  static const _accentDark = Color(0xFF082A63);
+  static const _success = Color(0xFF1F9D62);
 
   bool _isInsideGym = false;
-  bool _geoReady    = false;
+  bool _geoReady = false;
   List<AttendanceRecord> _history = [];
   AttendanceRecord? _openSession;
   Timer? _sessionTimer;
@@ -50,23 +49,27 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription? _fcmSub;
   StreamSubscription? _sessionSub;
   StreamSubscription? _historySub;
-  Duration _elapsed    = Duration.zero;
-  String _memberPhone  = '';
-  String _membership   = '';
-  int    _weekVisits   = 0;
-  String _topWorkout   = '';
+  Duration _elapsed = Duration.zero;
+  String _memberPhone = '';
+  String _membership = '';
+  int _weekVisits = 0;
+
+  int _selectedTab = 1;
 
   @override
-  void initState() { super.initState(); _init(); }
+  void initState() {
+    super.initState();
+    _init();
+  }
 
   Future<void> _init() async {
     _sessionSub = AttendanceService.openSessionStream(widget.memberId).listen((session) {
       if (!mounted) return;
       setState(() {
         _openSession = session;
-        // If there's an open session, reflect inside-gym status immediately
-        // without waiting for the first GPS reading
-        if (session != null && !_isInsideGym) _isInsideGym = true;
+        if (session != null && !_isInsideGym) {
+          _isInsideGym = true;
+        }
       });
       if (session != null) {
         _startSessionTimer(session.checkedIn);
@@ -77,7 +80,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     _historySub = AttendanceService.historyStream(widget.memberId).listen((records) {
-      if (mounted) setState(() => _history = records);
+      if (!mounted) return;
+      setState(() => _history = records);
     });
 
     await Future.wait([_loadMember(), _loadStats()]);
@@ -87,60 +91,52 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadMember() async {
     final member = await AttendanceService.getMember(widget.memberId);
-    if (member != null && mounted) {
-      setState(() {
-        _memberPhone = member['phone']          ?? '';
-        _membership  = member['membershipType'] ?? '';
-      });
-    }
+    if (!mounted || member == null) return;
+    setState(() {
+      _memberPhone = member['phone'] ?? '';
+      _membership = member['membershipType'] ?? '';
+    });
   }
 
   Future<void> _loadStats() async {
     final stats = await AttendanceService.getStats(widget.memberId);
-    if (mounted) {
-      setState(() {
-        _weekVisits = stats['weekVisits'] as int;
-        _topWorkout = stats['topWorkout'] as String;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _weekVisits = stats['weekVisits'] as int;
+    });
   }
 
   Future<void> _startGeofence() async {
     final granted = await GeoService.requestPermission();
-    if (!granted) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Location permission required for auto attendance'),
-          backgroundColor: Color(0xFFFF2D75),
-          behavior: SnackBarBehavior.floating,
-        ));
-      }
-      return;
-    }
+    if (!granted) return;
     final gym = await AttendanceService.getGym(widget.gymId);
-    if (gym == null) return;
-    if (mounted) setState(() => _geoReady = true);
+    if (gym == null || !mounted) return;
+
+    setState(() => _geoReady = true);
     _geoSub = GeoService.watchGeofence(
-      gymLat:       (gym['latitude']     as num).toDouble(),
-      gymLng:       (gym['longitude']    as num).toDouble(),
+      gymLat: (gym['latitude'] as num).toDouble(),
+      gymLng: (gym['longitude'] as num).toDouble(),
       radiusMeters: (gym['radiusMeters'] as num).toDouble(),
     ).listen(_onGeofenceChange);
   }
 
-  void _onGeofenceChange(bool isInside) async {
+  Future<void> _onGeofenceChange(bool isInside) async {
     setState(() => _isInsideGym = isInside);
     if (isInside && _openSession == null) {
       await AttendanceService.checkIn(widget.memberId, widget.gymId);
-    } else if (!isInside && _openSession != null) {
+      return;
+    }
+    if (!isInside && _openSession != null) {
       await AttendanceService.notifyExit(widget.memberId);
       _startAutoCheckoutTimer();
     }
   }
 
-   void _startSessionTimer(DateTime start) {
+  void _startSessionTimer(DateTime start) {
     _sessionTimer?.cancel();
-    _sessionTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
-      if (mounted) setState(() => _elapsed = DateTime.now().difference(start));
+    _sessionTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _elapsed = DateTime.now().difference(start));
     });
   }
 
@@ -159,10 +155,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void _listenFcm() {
     _fcmSub = FirebaseService.exitConfirmationStream().listen((_) {
       if (!mounted || _openSession == null) return;
-      ExitConfirmationSheet.show(context,
+      ExitConfirmationSheet.show(
+        context,
         sessionId: _openSession!.id.isEmpty ? 0 : int.tryParse(_openSession!.id) ?? 0,
         onConfirm: _doCheckout,
-        onDeny: () { _autoCheckoutTimer?.cancel(); setState(() => _isInsideGym = true); },
+        onDeny: () {
+          _autoCheckoutTimer?.cancel();
+          setState(() => _isInsideGym = true);
+        },
       );
     });
   }
@@ -173,66 +173,604 @@ class _HomeScreenState extends State<HomeScreen> {
     await AttendanceService.logout();
     await AuthPrefs.clear();
     if (!mounted) return;
-    Navigator.pushAndRemoveUntil(context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
   }
 
-  String _formatElapsed(Duration d) {
-    final h = d.inHours.toString().padLeft(2, '0');
-    final m = (d.inMinutes % 60).toString().padLeft(2, '0');
-    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+  Future<void> _openSettings() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SettingsScreen(
+          memberId: widget.memberId,
+          memberName: widget.memberName,
+          memberPhone: _memberPhone,
+          gymId: widget.gymId,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openStats() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => StatsScreen(memberId: widget.memberId)),
+    );
+  }
+
+  Future<void> _openAttendanceForm({AttendanceRecord? existing}) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AttendanceFormScreen(
+          memberId: widget.memberId,
+          gymId: widget.gymId,
+          existing: existing,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openQuickMenu() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCE4F5),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.bar_chart_rounded, color: _accent),
+                title: const Text('View Stats'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _openStats();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.settings_outlined, color: _accent),
+                title: const Text('Settings'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _openSettings();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.logout_rounded, color: Color(0xFFCB274A)),
+                title: const Text('Logout'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _logout();
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Duration? _averageDuration() {
+    final closed = _history.where((r) => r.duration != null).toList();
+    if (closed.isEmpty) return null;
+    final totalMinutes = closed.fold<int>(0, (sum, r) => sum + r.duration!.inMinutes);
+    return Duration(minutes: (totalMinutes / closed.length).round());
+  }
+
+  int _estimateCalories(Duration? duration) {
+    if (duration == null) return 0;
+    return (duration.inMinutes * 7.2).round();
+  }
+
+  String _formatDuration(Duration? duration) {
+    if (duration == null) return '--';
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    if (hours > 0) {
+      return minutes == 0 ? '${hours}h' : '${hours}h ${minutes}m';
+    }
+    return '${duration.inMinutes}m';
+  }
+
+  String _relativeDay(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(date.year, date.month, date.day);
+    final diff = today.difference(target).inDays;
+
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    return DateFormat('MMM d').format(date);
+  }
+
+  String _formatElapsed(Duration duration) {
+    final h = duration.inHours.toString().padLeft(2, '0');
+    final m = (duration.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (duration.inSeconds % 60).toString().padLeft(2, '0');
     return '$h:$m:$s';
   }
 
-  String _formatDuration(Duration? d) {
-    if (d == null) return '—';
-    final h = d.inHours;
-    final m = d.inMinutes % 60;
-    return h > 0 ? '${h}h ${m}m' : '${m}m';
+  IconData _workoutIcon(String? workoutType) {
+    final type = (workoutType ?? '').toLowerCase();
+    if (type.contains('cardio')) return Icons.directions_run_rounded;
+    if (type.contains('yoga')) return Icons.self_improvement_rounded;
+    if (type.contains('swim')) return Icons.pool_rounded;
+    if (type.contains('cycle')) return Icons.directions_bike_rounded;
+    if (type.contains('crossfit')) return Icons.bolt_rounded;
+    return Icons.fitness_center_rounded;
+  }
+
+  void _handleNavTap(int index) {
+    setState(() => _selectedTab = index);
+    if (index == 1) {
+      _openAttendanceForm();
+    } else if (index == 2) {
+      _openStats();
+    } else if (index == 3) {
+      _openSettings();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    const weeklyGoal = 5;
+    final weeklyProgress = (_weekVisits / weeklyGoal).clamp(0.0, 1.0);
+    final avgDuration = _averageDuration();
+    final burnedCalories = _history.fold<int>(0, (sum, r) => sum + _estimateCalories(r.duration));
+    final recentSessions = _history.take(4).toList();
+
     return Scaffold(
-      backgroundColor: _bg,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(
-          builder: (_) => AttendanceFormScreen(
-            memberId: widget.memberId, gymId: widget.gymId,
-          ),
-        )),
-        backgroundColor: _blue,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Log Attendance',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-      ),
+      backgroundColor: _pageBg,
+      bottomNavigationBar: _buildBottomNav(),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _onRefresh,
-          color: _blue,
-          backgroundColor: _card,
-          child: CustomScrollView(
-            slivers: [
-              _buildAppBar(),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    const SizedBox(height: 8),
-                    _buildSummaryRow(),
-                    const SizedBox(height: 16),
-                    _buildStatusCard(),
-                    const SizedBox(height: 16),
-                    if (_openSession != null) ...[
-                      _buildSessionCard(),
-                      const SizedBox(height: 16),
-                    ],
-                    _buildHistorySection(),
-                    const SizedBox(height: 100),
-                  ]),
+          color: _accent,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTopBar(),
+                const SizedBox(height: 18),
+                const Text(
+                  'Wellness Dashboard',
+                  style: TextStyle(
+                    color: _ink,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Track your corporate fitness goals.',
+                  style: TextStyle(color: _muted, fontSize: 15),
+                ),
+                const SizedBox(height: 16),
+                _buildCheckInCard(),
+                const SizedBox(height: 14),
+                _buildWeeklyProgressCard(
+                  visits: _weekVisits,
+                  goal: weeklyGoal,
+                  progress: weeklyProgress,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildMetricCard(
+                        icon: Icons.watch_later_outlined,
+                        label: 'Avg. Duration',
+                        value: _formatDuration(avgDuration),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildMetricCard(
+                        icon: Icons.local_fire_department_outlined,
+                        label: 'Burned',
+                        value: '${NumberFormat.decimalPattern().format(burnedCalories)} kcal',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    const Text(
+                      'Recent Sessions',
+                      style: TextStyle(color: _ink, fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: _openStats,
+                      child: const Text(
+                        'View All',
+                        style: TextStyle(color: _accent, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                if (recentSessions.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: _cardBg,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Text(
+                      'No sessions yet. Start with Gym Check-In.',
+                      style: TextStyle(color: _muted, fontSize: 14),
+                    ),
+                  )
+                else
+                  ...recentSessions.map(_buildRecentTile),
+                const SizedBox(height: 18),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopBar() {
+    final firstInitial = widget.memberName.trim().isEmpty
+        ? 'U'
+        : widget.memberName.trim().substring(0, 1).toUpperCase();
+
+    return Row(
+      children: [
+        Material(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: _openQuickMenu,
+            child: const SizedBox(
+              width: 40,
+              height: 40,
+              child: Icon(Icons.menu_rounded, color: _ink),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        const Text(
+          'CorpPro',
+          style: TextStyle(
+            color: _ink,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.2,
+          ),
+        ),
+        const Spacer(),
+        GestureDetector(
+          onTap: _openSettings,
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFFDDEAFF),
+              borderRadius: BorderRadius.circular(19),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              firstInitial,
+              style: const TextStyle(color: _ink, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCheckInCard() {
+    final statusText = _openSession == null
+        ? 'Tap to scan entrance QR'
+        : 'Session running ${_formatElapsed(_elapsed)}';
+
+    return InkWell(
+      onTap: () => _openAttendanceForm(existing: _openSession),
+      borderRadius: BorderRadius.circular(18),
+      child: Ink(
+        height: 168,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [_accentDark, Color(0xFF0F3F8E)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: _accent.withOpacity(0.28),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -24,
+              top: -16,
+              child: Icon(Icons.fitness_center_rounded, size: 120, color: Colors.white.withOpacity(0.08)),
+            ),
+            Positioned(
+              right: 12,
+              top: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: (_isInsideGym ? _success : const Color(0xFF7EA7E8)).withOpacity(0.22),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: Text(
+                  _isInsideGym ? 'Inside Gym' : (_geoReady ? 'Outside' : 'GPS Syncing'),
+                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
                 ),
               ),
+            ),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.16),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Gym Check-In',
+                    style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    statusText,
+                    style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeeklyProgressCard({
+    required int visits,
+    required int goal,
+    required double progress,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF9FB4D7).withOpacity(0.12),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Weekly Progress', style: TextStyle(color: _muted, fontSize: 12)),
+                const SizedBox(height: 4),
+                Text(
+                  '$visits/$goal',
+                  style: const TextStyle(color: _ink, fontSize: 36, fontWeight: FontWeight.w800, height: 0.95),
+                ),
+                const SizedBox(height: 4),
+                const Text('Sessions this week', style: TextStyle(color: _accent, fontSize: 13, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 68,
+            height: 68,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 6,
+                  backgroundColor: const Color(0xFFE3ECFA),
+                  valueColor: const AlwaysStoppedAnimation<Color>(_accent),
+                ),
+                const Icon(Icons.trending_up_rounded, color: _accent, size: 24),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricCard({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: _accent, size: 18),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(color: _muted, fontSize: 12)),
+          const SizedBox(height: 2),
+          Text(value, style: const TextStyle(color: _ink, fontSize: 16, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentTile(AttendanceRecord record) {
+    final calories = _estimateCalories(record.duration);
+    final subtitle = '${_relativeDay(record.checkedIn)} � ${DateFormat('hh:mm a').format(record.checkedIn)}';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE6F0FF),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(_workoutIcon(record.workoutType), color: _accent, size: 19),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  (record.workoutType?.isNotEmpty ?? false) ? record.workoutType! : 'General Workout',
+                  style: const TextStyle(color: _ink, fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 2),
+                Text(subtitle, style: const TextStyle(color: _muted, fontSize: 12)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                _formatDuration(record.duration),
+                style: const TextStyle(color: _ink, fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '$calories kcal',
+                style: const TextStyle(color: _muted, fontSize: 12),
+              ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    final items = [
+      (Icons.home_outlined, Icons.home_rounded, 'Home'),
+      (Icons.widgets_outlined, Icons.widgets_rounded, 'Services'),
+      (Icons.mail_outline_rounded, Icons.mail_rounded, 'Contact'),
+      (Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+    ];
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8EA7D0).withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: List.generate(items.length, (index) {
+              final selected = index == _selectedTab;
+              final (icon, activeIcon, label) = items[index];
+
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => _handleNavTap(index),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOut,
+                          width: 48,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: selected ? const Color(0xFFD9E9FF) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Icon(
+                            selected ? activeIcon : icon,
+                            color: selected ? _accent : _muted,
+                            size: 19,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            color: selected ? _accent : _muted,
+                            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
           ),
         ),
       ),
@@ -248,391 +786,5 @@ class _HomeScreenState extends State<HomeScreen> {
     _sessionSub?.cancel();
     _historySub?.cancel();
     super.dispose();
-  }
-
-  Widget _buildAppBar() {
-    final membershipColors = {
-      'Basic':   _blue,
-      'Premium': const Color(0xFFFFD166),
-      'VIP':     const Color(0xFFB967FF),
-    };
-    final badgeColor = membershipColors[_membership] ?? Colors.transparent;
-
-    return SliverAppBar(
-      backgroundColor: _bg,
-      floating: true,
-      titleSpacing: 20,
-      automaticallyImplyLeading: false,
-      title: Row(
-        children: [
-          Container(
-            width: 38, height: 38,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [_blue, _blueDk],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(11),
-              boxShadow: [
-                BoxShadow(color: _blue.withOpacity(0.25),
-                    blurRadius: 8, offset: const Offset(0, 3)),
-              ],
-            ),
-            child: const Icon(Icons.fitness_center, color: Colors.white, size: 18),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text('Hi, ${widget.memberName.split(' ').first}',
-                        style: const TextStyle(
-                          color: _ink, fontSize: 16, fontWeight: FontWeight.w700,
-                        )),
-                    if (_membership.isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: badgeColor.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text(_membership,
-                            style: TextStyle(
-                              color: badgeColor, fontSize: 10, fontWeight: FontWeight.w700,
-                            )),
-                      ),
-                    ],
-                  ],
-                ),
-                const Text('Fitness Factor',
-                    style: TextStyle(color: _muted, fontSize: 11)),
-              ],
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.bar_chart_outlined, color: _muted),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(
-            builder: (_) => StatsScreen(memberId: widget.memberId),
-          )),
-          tooltip: 'Stats',
-        ),
-        IconButton(
-          icon: const Icon(Icons.settings_outlined, color: _muted),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(
-            builder: (_) => SettingsScreen(
-              memberId:    widget.memberId,
-              memberName:  widget.memberName,
-              memberPhone: _memberPhone,
-              gymId:       widget.gymId,
-            ),
-          )),
-        ),
-        IconButton(
-          icon: const Icon(Icons.logout_outlined, color: _muted),
-          onPressed: _logout,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSummaryRow() {
-    return Row(
-      children: [
-        _summaryChip(
-          icon: Icons.calendar_today_outlined,
-          label: '$_weekVisits visits this week',
-          color: _blue,
-        ),
-        const SizedBox(width: 8),
-        if (_topWorkout.isNotEmpty && _topWorkout != '—')
-          _summaryChip(
-            icon: Icons.fitness_center_outlined,
-            label: _topWorkout,
-            color: _green,
-          ),
-      ],
-    );
-  }
-
-  Widget _summaryChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 13),
-          const SizedBox(width: 5),
-          Text(label,
-              style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusCard() {
-    final isIn  = _isInsideGym;
-    final color = isIn ? _green : _muted;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.25), width: 1),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04),
-              blurRadius: 12, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56, height: 56,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isIn ? Icons.location_on : Icons.location_off_outlined,
-              color: color, size: 28,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Container(width: 8, height: 8,
-                      decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-                  const SizedBox(width: 6),
-                  Text(
-                    isIn ? 'INSIDE GYM' : 'OUTSIDE',
-                    style: TextStyle(color: color, fontSize: 13,
-                        fontWeight: FontWeight.w700, letterSpacing: 1.2),
-                  ),
-                ]),
-                const SizedBox(height: 4),
-                Text(
-                  isIn ? 'Session in progress'
-                      : _geoReady ? 'Monitoring your location' : 'Waiting for GPS...',
-                  style: const TextStyle(color: _muted, fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-          if (!_geoReady)
-            SizedBox(width: 20, height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: _subtle)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSessionCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF00E5FF), Color(0xFF7C3DFF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: _blue.withOpacity(0.35),
-            blurRadius: 20, offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.timer_outlined, color: Colors.white70, size: 16),
-              const SizedBox(width: 6),
-              const Text('Current Session',
-                  style: TextStyle(color: Colors.white70, fontSize: 13,
-                      fontWeight: FontWeight.w600)),
-              const Spacer(),
-              if (_openSession?.workoutType?.isNotEmpty == true)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(_openSession!.workoutType!,
-                      style: const TextStyle(color: Colors.white, fontSize: 11,
-                          fontWeight: FontWeight.w600)),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _formatElapsed(_elapsed),
-            style: const TextStyle(
-              color: Colors.white, fontSize: 44,
-              fontWeight: FontWeight.w800,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _openSession != null
-                ? 'Checked in at ${DateFormat('hh:mm a').format(_openSession!.checkedIn)}'
-                : '',
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity, height: 44,
-            child: OutlinedButton.icon(
-              onPressed: _doCheckout,
-              icon: const Icon(Icons.logout_outlined, size: 18),
-              label: const Text('Check Out Now'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white60, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHistorySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Text('Recent Sessions',
-                style: TextStyle(color: _ink, fontSize: 18, fontWeight: FontWeight.w700)),
-            const Spacer(),
-            if (_history.isNotEmpty)
-              GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => StatsScreen(memberId: widget.memberId),
-                )),
-                child: const Text('See Stats →',
-                    style: TextStyle(color: _blue, fontSize: 13, fontWeight: FontWeight.w600)),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (_history.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: _card,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.04),
-                    blurRadius: 12, offset: const Offset(0, 4)),
-              ],
-            ),
-            child: const Center(
-              child: Text('No sessions yet',
-                  style: TextStyle(color: _subtle, fontSize: 14)),
-            ),
-          )
-        else
-          ...(_history.take(10).map(_buildHistoryTile)),
-      ],
-    );
-  }
-
-  Widget _buildHistoryTile(AttendanceRecord r) {
-    final isOpen = r.isOpen;
-    return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => AttendanceFormScreen(
-          memberId: widget.memberId, gymId: widget.gymId, existing: r,
-        ),
-      )),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: _card,
-          borderRadius: BorderRadius.circular(14),
-          border: isOpen ? Border.all(color: _blue.withOpacity(0.3), width: 1.5) : null,
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04),
-                blurRadius: 8, offset: const Offset(0, 2)),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40, height: 40,
-              decoration: BoxDecoration(
-                color: isOpen ? _blue.withOpacity(0.10) : const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                isOpen ? Icons.play_circle_outline : Icons.check_circle_outline,
-                color: isOpen ? _blue : _subtle, size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(DateFormat('EEE, MMM d').format(r.checkedIn),
-                      style: const TextStyle(
-                          color: _ink, fontSize: 14, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${DateFormat('hh:mm a').format(r.checkedIn)}'
-                    '${r.checkedOut != null ? ' → ${DateFormat('hh:mm a').format(r.checkedOut!)}' : ' → now'}',
-                    style: const TextStyle(color: _muted, fontSize: 12),
-                  ),
-                  if (r.workoutType != null && r.workoutType!.isNotEmpty) ...[
-                    const SizedBox(height: 3),
-                    Text(r.workoutType!,
-                        style: const TextStyle(color: _subtle, fontSize: 11)),
-                  ],
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(_formatDuration(r.duration),
-                    style: const TextStyle(
-                        color: _ink, fontSize: 14, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 2),
-                Text(r.source.toUpperCase(),
-                    style: const TextStyle(
-                        color: _subtle, fontSize: 10, letterSpacing: 0.8)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

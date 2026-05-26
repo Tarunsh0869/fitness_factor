@@ -1,4 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+
+class _MotivationAssets {
+  static const progress = 'assets/onboarding/welcome/pngwing.com (9).png';
+  static const push = 'assets/onboarding/welcome/pngwing.com (10).png';
+  static const rightPlace = 'assets/onboarding/welcome/pngwing.com (11).png';
+}
 
 class MotivationScreen extends StatelessWidget {
   const MotivationScreen({
@@ -35,7 +41,17 @@ class _ProgressMotivation extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 17, height: 1.4, color: Color(0xFF6F6F75)),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
+        const SizedBox(
+          height: 160,
+          width: double.infinity,
+          child: _MotivationImageCard(
+            assetPath: _MotivationAssets.progress,
+            fallbackIcon: Icons.stacked_line_chart,
+            fallbackIconSize: 84,
+          ),
+        ),
+        const SizedBox(height: 14),
         Expanded(
           child: GridView.count(
             crossAxisCount: 2,
@@ -98,15 +114,10 @@ class _PushMotivation extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F6FB),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Center(
-              child: Icon(Icons.query_stats, size: 120, color: Color(0xFF1689F7)),
-            ),
+          child: const _MotivationImageCard(
+            assetPath: _MotivationAssets.push,
+            fallbackIcon: Icons.query_stats,
+            fallbackIconSize: 120,
           ),
         ),
       ],
@@ -141,15 +152,10 @@ class _RightPlaceMotivation extends StatelessWidget {
         ),
         const SizedBox(height: 28),
         Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F6FB),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Center(
-              child: Icon(Icons.emoji_events_outlined, size: 130, color: Color(0xFF1689F7)),
-            ),
+          child: const _MotivationImageCard(
+            assetPath: _MotivationAssets.rightPlace,
+            fallbackIcon: Icons.emoji_events_outlined,
+            fallbackIconSize: 130,
           ),
         ),
       ],
@@ -184,6 +190,41 @@ class _InfoCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MotivationImageCard extends StatelessWidget {
+  const _MotivationImageCard({
+    required this.assetPath,
+    required this.fallbackIcon,
+    required this.fallbackIconSize,
+  });
+
+  final String assetPath;
+  final IconData fallbackIcon;
+  final double fallbackIconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Image.asset(
+        assetPath,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) {
+          return DecoratedBox(
+            decoration: const BoxDecoration(color: Color(0xFFF4F6FB)),
+            child: Center(
+              child: Icon(
+                fallbackIcon,
+                size: fallbackIconSize,
+                color: const Color(0xFF1689F7),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
