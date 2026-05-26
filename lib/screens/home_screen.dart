@@ -30,6 +30,14 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+enum _LocationAttendanceAction {
+  checkedIn,
+  alreadyCheckedIn,
+  checkInFailed,
+  exitRequested,
+  outside,
+}
+
 class _HomeScreenState extends State<HomeScreen> {
   static const _pageBg = Color(0xFFF9F7F2);
   static const _cardBg = Color(0xFFF3F2ED);
@@ -44,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isInsideGym = false;
   bool _geoReady = false;
+  bool _checkingArrival = false;
   List<AttendanceRecord> _history = [];
   AttendanceRecord? _openSession;
   Timer? _sessionTimer;
@@ -57,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _membership = '';
   int _weekVisits = 0;
 
-  int _selectedTab = 1;
+  int _selectedTab = 0;
 
   @override
   void initState() {
@@ -93,6 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     await Future.wait([_loadMember(), _loadStats()]);
     await _startGeofence();
+    await _syncArrivalByLocation(showFeedback: false);
     _listenFcm();
   }
 
@@ -127,16 +137,111 @@ class _HomeScreenState extends State<HomeScreen> {
     ).listen(_onGeofenceChange);
   }
 
-  Future<void> _onGeofenceChange(bool isInside) async {
+  Future<_LocationAttendanceAction?> _applyLocationAttendance(
+    bool isInside,
+  ) async {
+    if (!mounted) return null;
     setState(() => _isInsideGym = isInside);
-    if (isInside && _openSession == null) {
-      await AttendanceService.checkIn(widget.memberId, widget.gymId);
-      return;
+
+    if (isInside) {
+      _autoCheckoutTimer?.cancel();
+      if (_openSession != null) return _LocationAttendanceAction.alreadyCheckedIn;
+
+      final id = await AttendanceService.checkIn(widget.memberId, widget.gymId);
+      return id == null
+          ? _LocationAttendanceAction.checkInFailed
+          : _LocationAttendanceAction.checkedIn;
     }
+
     if (!isInside && _openSession != null) {
       await AttendanceService.notifyExit(widget.memberId);
       _startAutoCheckoutTimer();
+      return _LocationAttendanceAction.exitRequested;
     }
+
+    return _LocationAttendanceAction.outside;
+  }
+
+  Future<void> _onGeofenceChange(bool isInside) async {
+    await _applyLocationAttendance(isInside);
+  }
+
+  Future<void> _syncArrivalByLocation({bool showFeedback = true}) async {
+    if (_checkingArrival) return;
+
+    setState(() => _checkingArrival = true);
+    try {
+      final granted = await GeoService.requestPermission();
+      if (!mounted) return;
+      if (!granted) {
+        if (showFeedback) {
+          _showArrivalSnack('Location permission is needed to confirm arrival.',
+              color: _danger);
+        }
+        return;
+      }
+
+      final gym = await AttendanceService.getGym(widget.gymId);
+      if (!mounted) return;
+      final lat = gym?['latitude'];
+      final lng = gym?['longitude'];
+      final radius = gym?['radiusMeters'];
+      if (lat is! num || lng is! num) {
+        if (showFeedback) {
+          _showArrivalSnack('Gym location is not configured.', color: _danger);
+        }
+        return;
+      }
+
+      final isInside = await GeoService.isInsideGeofence(
+        gymLat: lat.toDouble(),
+        gymLng: lng.toDouble(),
+        radiusMeters: radius is num ? radius.toDouble() : 50,
+      );
+      if (!mounted) return;
+      if (isInside == null) {
+        if (showFeedback) {
+          _showArrivalSnack('Could not read your current location.',
+              color: _danger);
+        }
+        return;
+      }
+
+      final action = await _applyLocationAttendance(isInside);
+      if (!showFeedback || action == null || !mounted) return;
+
+      switch (action) {
+        case _LocationAttendanceAction.checkedIn:
+          _showArrivalSnack('Arrival confirmed. Check-in started.');
+          break;
+        case _LocationAttendanceAction.alreadyCheckedIn:
+          _showArrivalSnack('You are already checked in.');
+          break;
+        case _LocationAttendanceAction.checkInFailed:
+          _showArrivalSnack('Arrival found, but check-in failed.',
+              color: _danger);
+          break;
+        case _LocationAttendanceAction.exitRequested:
+          _showArrivalSnack('You are outside the gym. Exit confirmation sent.');
+          break;
+        case _LocationAttendanceAction.outside:
+          _showArrivalSnack('You are outside the gym range.', color: _danger);
+          break;
+      }
+    } finally {
+      if (mounted) setState(() => _checkingArrival = false);
+    }
+  }
+
+  void _showArrivalSnack(String message, {Color color = _accent}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
   }
 
   void _startSessionTimer(DateTime start) {
@@ -157,6 +262,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (session == null) return;
     _autoCheckoutTimer?.cancel();
     await AttendanceService.checkOut(session.id);
+  }
+
+  Future<void> _checkOutNow() async {
+    if (_openSession == null) return;
+    await _doCheckout();
+    if (!mounted) return;
+    _showArrivalSnack('Session checked out.');
   }
 
   void _listenFcm() {
@@ -332,7 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleNavTap(int index) {
     setState(() => _selectedTab = index);
     if (index == 1) {
-      _openAttendanceForm();
+      _syncArrivalByLocation();
     } else if (index == 2) {
       _openStats();
     } else if (index == 3) {
@@ -365,19 +477,9 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildTopBar(),
-                const SizedBox(height: 18),
-                const Text(
-                  'Wellness Dashboard',
-                  style: TextStyle(
-                    color: _ink,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
-                  ),
-                ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Track your corporate fitness goals.',
+                  'Track your Fitness Factor goals.',
                   style: TextStyle(color: _muted, fontSize: 15),
                 ),
                 const SizedBox(height: 16),
@@ -480,7 +582,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(width: 10),
         const Text(
-          'CorpPro',
+          'Fitness Factor',
           style: TextStyle(
             color: _ink,
             fontSize: 20,
@@ -510,15 +612,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCheckInCard() {
-    final statusText = _openSession == null
-        ? 'Tap to scan entrance QR'
+    final statusText = _checkingArrival
+        ? 'Checking your location...'
+        : _openSession == null
+        ? 'Tap to confirm arrival by location'
         : 'Session running ${_formatElapsed(_elapsed)}';
 
     return InkWell(
-      onTap: () => _openAttendanceForm(existing: _openSession),
+      onTap: _checkingArrival || _openSession != null
+          ? null
+          : () => _syncArrivalByLocation(),
       borderRadius: BorderRadius.circular(18),
       child: Ink(
-        height: 168,
+        height: _openSession == null ? 168 : 212,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [_accentDark, _accent],
@@ -580,15 +686,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white.withOpacity(0.16),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(
-                      Icons.qr_code_scanner_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
+                    child: _checkingArrival
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.my_location_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Gym Check-In',
+                    'Gym Arrival',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 26,
@@ -603,6 +717,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontSize: 13,
                     ),
                   ),
+                  if (_openSession != null) ...[
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      height: 42,
+                      child: ElevatedButton.icon(
+                        onPressed: _checkOutNow,
+                        icon: const Icon(Icons.logout_rounded, size: 18),
+                        label: const Text('Check Out Now'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: _accentDark,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -792,79 +930,125 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBottomNav() {
     final items = [
       (Icons.home_outlined, Icons.home_rounded, 'Home'),
-      (Icons.widgets_outlined, Icons.widgets_rounded, 'Services'),
-      (Icons.mail_outline_rounded, Icons.mail_rounded, 'Contact'),
+      (Icons.location_on_outlined, Icons.location_on_rounded, 'Arrival'),
+      (
+        Icons.local_fire_department_outlined,
+        Icons.local_fire_department_rounded,
+        'Streaks',
+      ),
       (Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
     ];
 
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          decoration: BoxDecoration(
-            color: _cardBg,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            children: List.generate(items.length, (index) {
-              final selected = index == _selectedTab;
-              final (icon, activeIcon, label) = items[index];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final compact = width < 390;
+        final tiny = width < 340;
+        final marginX = tiny ? 8.0 : (compact ? 10.0 : 14.0);
+        final paddingX = tiny ? 6.0 : (compact ? 8.0 : 10.0);
+        final paddingY = tiny ? 7.0 : 9.0;
+        final itemWidth = (width - (marginX * 2) - (paddingX * 2)) /
+            items.length;
+        final activePillWidth = (itemWidth - 8).clamp(
+          38.0,
+          tiny ? 46.0 : (compact ? 52.0 : 58.0),
+        ).toDouble();
+        final inactivePillWidth = (itemWidth - 14).clamp(
+          34.0,
+          tiny ? 40.0 : 46.0,
+        ).toDouble();
+        final pillHeight = tiny ? 30.0 : 34.0;
+        final labelFontSize = tiny ? 9.5 : (compact ? 10.0 : 11.0);
 
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => _handleNavTap(index),
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOut,
-                          width: 48,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? _accent.withOpacity(0.12)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Icon(
-                            selected ? activeIcon : icon,
-                            color: selected ? _accent : _muted,
-                            size: 19,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          label,
-                          style: TextStyle(
-                            color: selected ? _accent : _muted,
-                            fontWeight: selected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(marginX, 0, marginX, 12),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: paddingX,
+                vertical: paddingY,
+              ),
+              decoration: BoxDecoration(
+                color: _cardBg,
+                borderRadius: BorderRadius.circular(tiny ? 28 : 34),
+                border: Border.all(color: Colors.white.withOpacity(0.72)),
+                boxShadow: [
+                  BoxShadow(
+                    color: _accent.withOpacity(0.16),
+                    blurRadius: compact ? 22 : 28,
+                    offset: Offset(0, compact ? 10 : 14),
                   ),
-                ),
-              );
-            }),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: compact ? 14 : 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: List.generate(items.length, (index) {
+                  final selected = index == _selectedTab;
+                  final (icon, activeIcon, label) = items[index];
+
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => _handleNavTap(index),
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: tiny ? 2 : 4),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOut,
+                              width: selected
+                                  ? activePillWidth
+                                  : inactivePillWidth,
+                              height: pillHeight,
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? _accent.withOpacity(0.14)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(22),
+                              ),
+                              child: Icon(
+                                selected ? activeIcon : icon,
+                                color: selected ? _accent : _muted,
+                                size: selected
+                                    ? (tiny ? 19 : 21)
+                                    : (tiny ? 17 : 19),
+                              ),
+                            ),
+                            SizedBox(height: tiny ? 1 : 2),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                label,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  color: selected ? _accent : _muted,
+                                  fontWeight: selected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  fontSize: labelFontSize,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

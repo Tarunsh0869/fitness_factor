@@ -61,7 +61,7 @@ namespace fitness_factor_api.Migrations
             migrationBuilder.InsertData(
                 table: "Gyms",
                 columns: new[] { "Id", "Name", "Latitude", "Longitude", "RadiusMeters" },
-                values: new object[] { 1, "Fitness Factor HQ", 3.1390m, 101.6869m, 50 });
+                values: new object[] { 1, "Fitness Factor", 3.1390m, 101.6869m, 50 });
         }
 
         /// <inheritdoc />

@@ -313,7 +313,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           // Header
                           Row(
                             children: [
-                              const FitnessFactorLogo(size: 48),
+                              const FitnessFactorLogo(size: 72),
                               const SizedBox(width: 12),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -177,7 +177,7 @@ class _SeedScreenState extends State<SeedScreen> {
                           _credRow(
                             Icons.fitness_center,
                             'Gym ID',
-                            BasicGymConfig.gymId,
+                            BasicGymConfig.name,
                           ),
                           const SizedBox(height: 10),
                           _credRow(

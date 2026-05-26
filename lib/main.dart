@@ -49,7 +49,49 @@ class FitnessFactorApp extends StatelessWidget {
       title: 'Fitness Factor',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
-      home: const OnboardingFlowScreen(),
+      home: const _StartupGate(),
+    );
+  }
+}
+
+class _StartupGate extends StatelessWidget {
+  const _StartupGate();
+
+  Future<bool> _shouldShowOnboarding() async {
+    if (await AuthPrefs.hasCompletedOnboarding()) return false;
+
+    final savedSession = await AuthPrefs.load();
+    if (savedSession != null) {
+      await AuthPrefs.markOnboardingCompleted();
+      return false;
+    }
+
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _shouldShowOnboarding(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: AppTheme.background,
+            body: Center(
+              child: CircularProgressIndicator(color: AppTheme.primary),
+            ),
+          );
+        }
+
+        if (snap.data == true) {
+          return OnboardingFlowScreen(
+            onComplete: AuthPrefs.markOnboardingCompleted,
+            completeDestinationBuilder: (_) => const _AuthGate(),
+          );
+        }
+
+        return const _AuthGate();
+      },
     );
   }
 }

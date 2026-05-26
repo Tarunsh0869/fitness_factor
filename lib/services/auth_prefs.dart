@@ -10,6 +10,7 @@ class AuthPrefs {
   static const _kApiMemberId = 'apiMemberId';
   static const _kApiGymId = 'apiGymId';
   static const _kJwtExpiresAt = 'jwtExpiresAt';
+  static const _kOnboardingCompleted = 'onboardingCompleted';
 
   static Future<void> save({
     required String memberId,
@@ -86,6 +87,25 @@ class AuthPrefs {
       await p.remove(_kJwtExpiresAt);
     } catch (e) {
       debugPrint('[AuthPrefs] clear failed: $e');
+    }
+  }
+
+  static Future<bool> hasCompletedOnboarding() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      return p.getBool(_kOnboardingCompleted) ?? false;
+    } catch (e) {
+      debugPrint('[AuthPrefs] hasCompletedOnboarding failed: $e');
+      return false;
+    }
+  }
+
+  static Future<void> markOnboardingCompleted() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kOnboardingCompleted, true);
+    } catch (e) {
+      debugPrint('[AuthPrefs] markOnboardingCompleted failed: $e');
     }
   }
 }

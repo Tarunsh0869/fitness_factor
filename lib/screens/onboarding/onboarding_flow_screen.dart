@@ -15,11 +15,20 @@ import 'welcome_screen.dart';
 import 'workout_days_screen.dart';
 
 class OnboardingFlowScreen extends StatefulWidget {
-  const OnboardingFlowScreen({super.key});
+  final Future<void> Function()? onComplete;
+  final WidgetBuilder completeDestinationBuilder;
+
+  const OnboardingFlowScreen({
+    super.key,
+    this.onComplete,
+    this.completeDestinationBuilder = _defaultCompleteDestination,
+  });
 
   @override
   State<OnboardingFlowScreen> createState() => _OnboardingFlowScreenState();
 }
+
+Widget _defaultCompleteDestination(BuildContext context) => const LoginScreen();
 
 class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   final OnboardingModel _model = OnboardingModel();
@@ -39,14 +48,16 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
 
   void _refresh() => setState(() {});
 
-  void _continue() {
+  Future<void> _continue() async {
     if (_model.step < OnboardingModel.totalSteps - 1) {
       _model.nextStep();
       return;
     }
+    await widget.onComplete?.call();
+    if (!mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: widget.completeDestinationBuilder),
     );
   }
 

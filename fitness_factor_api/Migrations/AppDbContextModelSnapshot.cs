@@ -47,7 +47,7 @@ namespace fitness_factor_api.Migrations
                 b.Property<int>("RadiusMeters").HasColumnType("int");
                 b.HasKey("Id");
                 b.ToTable("Gyms");
-                b.HasData(new { Id = 1, Name = "Fitness Factor HQ", Latitude = 3.1390m, Longitude = 101.6869m, RadiusMeters = 50 });
+                b.HasData(new { Id = 1, Name = "Fitness Factor", Latitude = 3.1390m, Longitude = 101.6869m, RadiusMeters = 50 });
             });
 
             modelBuilder.Entity("fitness_factor_api.Entities.Member", b =>

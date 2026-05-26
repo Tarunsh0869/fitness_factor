@@ -38,6 +38,14 @@ class _AdminGymRegistrationScreenState
   bool _locationFetching = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _fetchLocation();
+    });
+  }
+
+  @override
   void dispose() {
     _nameCtrl.dispose();
     _pinCtrl.dispose();
@@ -49,8 +57,21 @@ class _AdminGymRegistrationScreenState
 
   Future<void> _fetchLocation() async {
     if (_locationFetching) return;
-    setState(() => _locationFetching = true);
+    setState(() {
+      _locationFetching = true;
+      _error = null;
+    });
     try {
+      final granted = await GeoService.requestPermission();
+      if (!granted) {
+        if (mounted) {
+          setState(
+            () => _error = 'Location permission is needed to auto-fill coordinates.',
+          );
+        }
+        return;
+      }
+
       final pos = await GeoService.currentPosition();
       if (pos != null && mounted) {
         setState(() {
@@ -320,7 +341,9 @@ class _AdminGymRegistrationScreenState
                               )
                             : const Icon(Icons.my_location_outlined),
                         label: Text(
-                          _locationFetching ? 'Fetching...' : 'Use My Location',
+                          _locationFetching
+                              ? 'Fetching coordinates...'
+                              : 'Auto Fetch Current Coordinates',
                         ),
                       ),
                     ),

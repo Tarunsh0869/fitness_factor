@@ -45,7 +45,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new Gym
             {
                 Id           = 1,
-                Name         = "Fitness Factor HQ",
+                Name         = "Fitness Factor",
                 Latitude     = 3.1390m,
                 Longitude    = 101.6869m,
                 RadiusMeters = 50

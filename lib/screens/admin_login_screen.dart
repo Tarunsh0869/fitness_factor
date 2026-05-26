@@ -128,6 +128,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 controller: _gymIdCtrl,
                 decoration: InputDecoration(
                   labelText: 'Gym ID',
+                  hintText: 'Fitness Factor',
                   labelStyle: TextStyle(color: _muted),
                   prefixIcon: const Icon(Icons.fitness_center, color: _blue),
                   filled: true,

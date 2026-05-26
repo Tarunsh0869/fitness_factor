@@ -101,7 +101,7 @@ Tables created:
 - `Members` — registered members
 - `Attendances` — check-in/check-out records
 
-A default gym (`Fitness Factor HQ`) is seeded on first run.
+A default gym (`Fitness Factor`) is seeded on first run.
 
 ---
 

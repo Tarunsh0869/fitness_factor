@@ -137,7 +137,7 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[Gyms] WHERE [Id] = 1)
 BEGIN
     SET IDENTITY_INSERT [dbo].[Gyms] ON;
     INSERT INTO [dbo].[Gyms] ([Id], [Name], [Latitude], [Longitude], [RadiusMeters])
-    VALUES (1, N'Fitness Factor HQ', 3.1390, 101.6869, 50);
+    VALUES (1, N'Fitness Factor', 3.1390, 101.6869, 50);
     SET IDENTITY_INSERT [dbo].[Gyms] OFF;
 END;
 """);

@@ -163,18 +163,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           builder: (_) => const AdminLoginScreen(),
                         ),
                       ),
-                      child: const FitnessFactorLogo(size: 96),
+                      child: const FitnessFactorLogo(size: 128),
                     ),
                   ),
                   const SizedBox(height: 28),
-                  const Text(
-                    'Fitness Factor',
-                    style: TextStyle(
-                      color: _ink,
-                      fontSize: 34,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                 
                   const SizedBox(height: 6),
                   RichText(
                     text: TextSpan(

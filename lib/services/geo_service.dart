@@ -72,4 +72,21 @@ class GeoService {
       return null;
     }
   }
+
+  static Future<bool?> isInsideGeofence({
+    required double gymLat,
+    required double gymLng,
+    required double radiusMeters,
+  }) async {
+    final pos = await currentPosition();
+    if (pos == null) return null;
+
+    return Geolocator.distanceBetween(
+          pos.latitude,
+          pos.longitude,
+          gymLat,
+          gymLng,
+        ) <=
+        radiusMeters;
+  }
 }

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../services/admin_service.dart';
 import '../services/attendance_service.dart';
+import '../services/geo_service.dart';
 
 class AdminGymSettingsScreen extends StatefulWidget {
   final String gymId;
@@ -31,6 +32,7 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
 
   bool _loading = true;
   bool _saving = false;
+  bool _locationFetching = false;
 
   // Admin PINs management
   List<String> _adminPins = [];
@@ -99,6 +101,43 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
           );
         }
       });
+    }
+  }
+
+  Future<void> _fetchCurrentCoordinates() async {
+    if (_locationFetching) return;
+
+    setState(() => _locationFetching = true);
+    try {
+      final granted = await GeoService.requestPermission();
+      if (!mounted) return;
+      if (!granted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Location permission is needed to fetch coordinates.'),
+          ),
+        );
+        return;
+      }
+
+      final pos = await GeoService.currentPosition();
+      if (!mounted) return;
+      if (pos == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not fetch current location.')),
+        );
+        return;
+      }
+
+      setState(() {
+        _latCtrl.text = pos.latitude.toString();
+        _lngCtrl.text = pos.longitude.toString();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Coordinates fetched successfully.')),
+      );
+    } finally {
+      if (mounted) setState(() => _locationFetching = false);
     }
   }
 
@@ -243,6 +282,30 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        onPressed: _locationFetching
+                            ? null
+                            : _fetchCurrentCoordinates,
+                        icon: _locationFetching
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.my_location_outlined),
+                        label: Text(
+                          _locationFetching
+                              ? 'Fetching coordinates...'
+                              : 'Auto Fetch Current Coordinates',
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
