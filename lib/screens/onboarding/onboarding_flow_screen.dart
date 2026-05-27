@@ -1,18 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../widgets/onboarding_progress_bar.dart';
-import '../../widgets/primary_button.dart';
+
+import '../guest_experience_screen.dart';
 import '../login_screen.dart';
-import 'equipment_screen.dart';
-import 'experience_screen.dart';
-import 'focus_area_screen.dart';
-import 'gender_screen.dart';
-import 'goals_screen.dart';
-import 'motivation_screen.dart';
-import 'onboarding_model.dart';
-import 'tracking_reason_screen.dart';
-import 'weight_screen.dart';
-import 'welcome_screen.dart';
-import 'workout_days_screen.dart';
 
 class OnboardingFlowScreen extends StatefulWidget {
   final Future<void> Function()? onComplete;
@@ -31,24 +20,43 @@ class OnboardingFlowScreen extends StatefulWidget {
 Widget _defaultCompleteDestination(BuildContext context) => const LoginScreen();
 
 class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
-  final OnboardingModel _model = OnboardingModel();
+  static const _bg = Color(0xFFF9F7F2);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
+  static const _accent = Color(0xFF035C4A);
+  static const _accentDark = Color(0xFF02473A);
 
-  @override
-  void initState() {
-    super.initState();
-    _model.addListener(_refresh);
+  final PageController _controller = PageController();
+  int _index = 0;
+
+  static const _slides = <_SlideData>[
+    _SlideData(
+      title: 'Build consistency',
+      subtitle: 'Start fast workouts and keep your routine on track.',
+      icon: Icons.fitness_center_rounded,
+    ),
+    _SlideData(
+      title: 'Track progress',
+      subtitle: 'See sessions, streaks, and improvements clearly.',
+      icon: Icons.show_chart_rounded,
+    ),
+    _SlideData(
+      title: 'Unlock personalization',
+      subtitle: 'Sign in when ready and tailor plans to your goals.',
+      icon: Icons.auto_awesome_rounded,
+    ),
+  ];
+
+  Future<void> _completeAndOpenGuest() async {
+    await widget.onComplete?.call();
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const GuestExperienceScreen()),
+    );
   }
 
-  @override
-  void dispose() {
-    _model.removeListener(_refresh);
-    _model.dispose();
-    super.dispose();
-  }
-
-  void _refresh() => setState(() {});
-
-  Future<void> _finishOnboarding() async {
+  Future<void> _completeAndOpenSignIn() async {
     await widget.onComplete?.call();
     if (!mounted) return;
     Navigator.pushReplacement(
@@ -57,115 +65,188 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     );
   }
 
-  Future<void> _continue() async {
-    if (_model.step < OnboardingModel.totalSteps - 1) {
-      _model.nextStep();
-      return;
-    }
-    await _finishOnboarding();
-  }
-
-  Future<void> _skip() async {
-    await _finishOnboarding();
+  void _next() {
+    if (_index >= _slides.length - 1) return;
+    _controller.nextPage(
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOut,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_model.step == 0) {
-      return WelcomeScreen(onJoin: _continue, onSkip: _skip);
-    }
-
+    final isLast = _index == _slides.length - 1;
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F7F2),
+      backgroundColor: _bg,
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: Row(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+          child: Column(
+            children: [
+              Row(
                 children: [
-                  IconButton(
-                    onPressed: _model.previousStep,
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new,
-                      color: Color(0xFF7A8582),
-                    ),
-                  ),
-                  Expanded(
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OnboardingProgressBar(progress: _model.progress),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 64,
-                    child: TextButton(
-                      onPressed: _skip,
-                      child: const Text(
-                        'Skip',
-                        style: TextStyle(
-                          color: Color(0xFF035C4A),
-                          fontWeight: FontWeight.w800,
-                        ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: _completeAndOpenSignIn,
+                    child: const Text(
+                      'Skip',
+                      style: TextStyle(
+                        color: _accent,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 240),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
-                  child: _contentByStep(),
+              Expanded(
+                child: PageView.builder(
+                  controller: _controller,
+                  itemCount: _slides.length,
+                  onPageChanged: (value) => setState(() => _index = value),
+                  itemBuilder: (context, i) {
+                    final slide = _slides[i];
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 152,
+                          height: 152,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [_accentDark, _accent],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(40),
+                          ),
+                          child: Icon(
+                            slide.icon,
+                            color: Colors.white,
+                            size: 68,
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        Text(
+                          slide.title,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: _ink,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          slide.subtitle,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: _muted,
+                            fontSize: 15,
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-              child: PrimaryButton(
-                label: _model.step == OnboardingModel.totalSteps - 1
-                    ? 'Get started'
-                    : 'Continue',
-                enabled: _model.canContinue,
-                onTap: _continue,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  _slides.length,
+                  (i) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    height: 7,
+                    width: i == _index ? 24 : 7,
+                    decoration: BoxDecoration(
+                      color: i == _index ? _accent : const Color(0xFFC3C8C6),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 18),
+              if (!isLast)
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: _next,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _accent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Next',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              if (isLast) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: _completeAndOpenGuest,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _accent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Try as Guest',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton(
+                    onPressed: _completeAndOpenSignIn,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _ink,
+                      side: const BorderSide(color: Color(0xFFC3C8C6)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      'Sign In',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _contentByStep() {
-    switch (_model.step) {
-      case 1:
-        return GenderScreen(key: const ValueKey(1), model: _model);
-      case 2:
-        return GoalsScreen(key: const ValueKey(2), model: _model);
-      case 3:
-        return FocusAreaScreen(key: const ValueKey(3), model: _model);
-      case 4:
-        return TrackingReasonScreen(key: const ValueKey(4), model: _model);
-      case 5:
-        return ExperienceScreen(key: const ValueKey(5), model: _model);
-      case 6:
-        return WorkoutDaysScreen(key: const ValueKey(6), model: _model);
-      case 7:
-        return EquipmentScreen(key: const ValueKey(7), model: _model);
-      case 8:
-        return WeightScreen(key: const ValueKey(8), model: _model);
-      case 9:
-        return const MotivationScreen(key: ValueKey(9), index: 0);
-      case 10:
-        return const MotivationScreen(key: ValueKey(10), index: 1);
-      case 11:
-        return const MotivationScreen(key: ValueKey(11), index: 2);
-      default:
-        return const SizedBox.shrink();
-    }
-  }
+class _SlideData {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _SlideData({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
 }

@@ -5,13 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/admin_service.dart';
 import '../services/auth_prefs.dart';
-import 'login_screen.dart';
+import 'onboarding/onboarding_flow_screen.dart';
 import 'admin_members_screen.dart';
 import 'admin_attendance_screen.dart';
 import 'admin_gym_registration_screen.dart';
 import 'admin_gym_settings_screen.dart';
 import 'admin_feedback_screen.dart';
 import 'admin_verification_screen.dart';
+import 'admin_attendee_stats_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final String gymId;
@@ -38,6 +39,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     'totalMembers': 0,
     'insideNow': 0,
     'todayVisits': 0,
+    'uniqueAttendeesToday': 0,
+    'missedCheckoutRateToday': 0.0,
+    'repeatMembers7d': 0,
+    'repeatMembers30d': 0,
     'monthVisits': 0,
     'weekVisits': 0,
     'pendingVerify': 0,
@@ -77,7 +82,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final now = DateTime.now();
     setState(() {
       _headerTime = DateFormat('hh:mm:ss a').format(now);
-      _headerDate = DateFormat('EEE, MMM d · yyyy').format(now);
+      _headerDate = DateFormat(
+        'EEE, MMM d ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· yyyy',
+      ).format(now);
     });
   }
 
@@ -100,7 +107,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(
+        builder: (_) =>
+            OnboardingFlowScreen(onComplete: AuthPrefs.markOnboardingCompleted),
+      ),
       (_) => false,
     );
   }
@@ -165,7 +175,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              '$pendingV pending · $openFeed open feedback',
+              '$pendingV pending ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· $openFeed open feedback',
               style: const TextStyle(color: _muted, fontSize: 13),
             ),
             const SizedBox(height: 20),
@@ -357,30 +367,39 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Admin Dashboard',
-                style: TextStyle(
-                  color: _ink,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Row(
-                children: [
-                  Icon(Icons.access_time_outlined, color: _muted, size: 10),
-                  const SizedBox(width: 4),
-                  Text(
-                    _headerTime.isEmpty && _headerDate.isEmpty
-                        ? DateFormat('h:mm a').format(DateTime.now())
-                        : '$_headerTime · $_headerDate',
-                    style: const TextStyle(color: _muted, fontSize: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Admin Dashboard',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _ink,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
-              ),
-            ],
+                ),
+                Row(
+                  children: [
+                    Icon(Icons.access_time_outlined, color: _muted, size: 10),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        _headerTime.isEmpty && _headerDate.isEmpty
+                            ? DateFormat('h:mm a').format(DateTime.now())
+                            : '$_headerTime | $_headerDate',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: _muted, fontSize: 11),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -476,7 +495,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ),
                     ),
                     child: Text(
-                      '$pending member${pending > 1 ? 's' : ''} pending verification  →',
+                      '$pending member${pending > 1 ? 's' : ''} pending verification  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢',
                       style: const TextStyle(
                         color: _amber,
                         fontSize: 13,
@@ -494,7 +513,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ),
                     ),
                     child: Text(
-                      '$feedback open feedback item${feedback > 1 ? 's' : ''}  →',
+                      '$feedback open feedback item${feedback > 1 ? 's' : ''}  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢',
                       style: const TextStyle(
                         color: _amber,
                         fontSize: 13,
@@ -519,6 +538,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ),
       );
     }
+    final missedRate =
+        (_stats['missedCheckoutRateToday'] as num?)?.toDouble() ?? 0;
     return Column(
       children: [
         Row(
@@ -557,10 +578,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _statCard(
-                'This Week',
-                '${_stats['weekVisits']}',
-                Icons.date_range_outlined,
-                _amber,
+                'Unique Today',
+                '${_stats['uniqueAttendeesToday']}',
+                Icons.people_alt_outlined,
+                _green,
               ),
             ),
           ],
@@ -570,10 +591,55 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           children: [
             Expanded(
               child: _statCard(
+                'This Week',
+                '${_stats['weekVisits']}',
+                Icons.date_range_outlined,
+                _amber,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _statCard(
                 'This Month',
                 '${_stats['monthVisits']}',
                 Icons.calendar_month_outlined,
                 const Color(0xFF035C4A),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _statCard(
+                'Repeat (7d)',
+                '${_stats['repeatMembers7d']}',
+                Icons.replay_outlined,
+                _blue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _statCard(
+                'Repeat (30d)',
+                '${_stats['repeatMembers30d']}',
+                Icons.repeat_outlined,
+                _green,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _statCard(
+                'Missed Check-out',
+                '${(missedRate * 100).toStringAsFixed(1)}%',
+                Icons.warning_amber_outlined,
+                _amber,
+                highlight: missedRate > 0.05,
               ),
             ),
             const SizedBox(width: 12),
@@ -821,10 +887,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
       _DashboardAction(
         icon: Icons.bar_chart_outlined,
-        label: 'Reports',
+        label: 'Attendee Stats',
         color: _purple,
-        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reports feature coming soon')),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AdminAttendeeStatsScreen(gymId: widget.gymId),
+          ),
         ),
       ),
     ];
@@ -1036,8 +1105,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 ),
                 Text(
-                  'IN ${DateFormat('hh:mm a').format(checkedIn)} · $elapsedStr'
-                  '${workout.isNotEmpty ? ' · $workout' : ''}',
+                  'IN ${DateFormat('hh:mm a').format(checkedIn)} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· $elapsedStr'
+                  '${workout.isNotEmpty ? ' ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· $workout' : ''}',
                   style: TextStyle(color: _muted, fontSize: 11),
                 ),
               ],
@@ -1076,22 +1145,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       final co = s['checkedOut'] as DateTime;
       totalMin += co.difference(ci).inMinutes;
     }
-    final avgStr = closed.isEmpty ? '—' : _fmtDur(totalMin ~/ closed.length);
+    final avgStr = closed.isEmpty ? '-' : _fmtDur(totalMin ~/ closed.length);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text(
-              "Today's Visits (${_todayFeed.length})",
-              style: const TextStyle(
-                color: _ink,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+            Expanded(
+              child: Text(
+                "Today's Visits (${_todayFeed.length})",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _ink,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 10),
             GestureDetector(
               onTap: () => Navigator.push(
                 context,
@@ -1150,7 +1223,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            Text(label, style: TextStyle(color: _muted, fontSize: 10)),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: _muted, fontSize: 10),
+            ),
           ],
         ),
       ),

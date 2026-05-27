@@ -6,10 +6,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'services/admin_service.dart';
+import 'services/attendance_service.dart';
 import 'services/biometric_auth_service.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_prefs.dart';
 import 'theme/app_theme.dart';
+import 'screens/complete_profile_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
@@ -58,15 +60,8 @@ class _StartupGate extends StatelessWidget {
   const _StartupGate();
 
   Future<bool> _shouldShowOnboarding() async {
-    if (await AuthPrefs.hasCompletedOnboarding()) return false;
-
     final savedSession = await AuthPrefs.load();
-    if (savedSession != null) {
-      await AuthPrefs.markOnboardingCompleted();
-      return false;
-    }
-
-    return true;
+    return savedSession == null;
   }
 
   @override
@@ -153,7 +148,9 @@ class _AutoLoginGate extends StatelessWidget {
           }
           if (FirebaseAuth.instance.currentUser == null) {
             AuthPrefs.clear();
-            return const LoginScreen();
+            return OnboardingFlowScreen(
+              onComplete: AuthPrefs.markOnboardingCompleted,
+            );
           }
           return _BiometricSessionGate(saved: saved);
         }
@@ -203,6 +200,40 @@ class _BiometricSessionGateState extends State<_BiometricSessionGate> {
         FirebaseService.setMemberId(saved['memberId'] as String);
         if (saved['isAdmin'] == true) {
           return AdminDashboardScreen(gymId: saved['gymId'] as String);
+        }
+        return _MemberProfileGate(saved: saved);
+      },
+    );
+  }
+}
+
+class _MemberProfileGate extends StatelessWidget {
+  final Map<String, dynamic> saved;
+
+  const _MemberProfileGate({required this.saved});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: AttendanceService.needsProfileCompletion(
+        saved['memberId'] as String,
+      ),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFF9F7F2),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFF035C4A)),
+            ),
+          );
+        }
+
+        if (snap.data == true) {
+          return CompleteProfileScreen(
+            memberId: saved['memberId'] as String,
+            memberName: saved['memberName'] as String,
+            gymId: saved['gymId'] as String,
+          );
         }
 
         return HomeScreen(

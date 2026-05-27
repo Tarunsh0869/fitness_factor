@@ -25,6 +25,24 @@ class AdminService {
 
   static void clearNameCache() => _nameCache.clear();
 
+  static DateTime _toDateTime(dynamic value, {required DateTime fallback}) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    return fallback;
+  }
+
+  static int _safeDurationMinutes(DateTime checkedIn, DateTime checkedOut) {
+    final raw = checkedOut.difference(checkedIn).inMinutes;
+    if (raw < 0) return 0;
+    return raw.clamp(0, 60 * 20);
+  }
+
+  static String _dayKey(DateTime value) {
+    final month = value.month.toString().padLeft(2, '0');
+    final day = value.day.toString().padLeft(2, '0');
+    return '${value.year}-$month-$day';
+  }
+
   // â”€â”€ Gym â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static String normalizeGymId(String gymId) {
@@ -300,10 +318,14 @@ class AdminService {
               'sessionId': d.id,
               'memberId': mid,
               'memberName': await _memberName(mid),
-              'checkedIn':
-                  (data['checkedIn'] as Timestamp?)?.toDate() ?? DateTime.now(),
+              'checkedIn': _toDateTime(
+                data['checkedIn'],
+                fallback: DateTime.now(),
+              ),
               'source': data['source'] ?? 'auto',
               'workoutType': data['workoutType'] ?? '',
+              'sessionState': data['sessionState'] ?? 'checked_in',
+              'checkInMethod': data['checkInMethod'] ?? 'legacy',
             });
           }
           results.sort(
@@ -338,10 +360,14 @@ class AdminService {
               'sessionId': d.id,
               'memberId': mid,
               'memberName': await _memberName(mid),
-              'checkedIn': (data['checkedIn'] as Timestamp?)?.toDate() ?? now,
-              'checkedOut': (data['checkedOut'] as Timestamp?)?.toDate(),
+              'checkedIn': _toDateTime(data['checkedIn'], fallback: now),
+              'checkedOut': data['checkedOut'] == null
+                  ? null
+                  : _toDateTime(data['checkedOut'], fallback: now),
               'source': data['source'] ?? 'auto',
               'workoutType': data['workoutType'] ?? '',
+              'sessionState': data['sessionState'] ?? 'legacy',
+              'checkInMethod': data['checkInMethod'] ?? 'legacy',
             });
           }
           return results;
@@ -356,12 +382,28 @@ class AdminService {
   ) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
+    final start7 = end.subtract(const Duration(days: 7));
+    final start30 = end.subtract(const Duration(days: 30));
     try {
       final snap = await _db
           .collection('attendance')
           .where('gymId', isEqualTo: gymId)
-          .where('checkedIn', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-          .where('checkedIn', isLessThan: Timestamp.fromDate(end))
+          .where(
+            'checkedIn',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(start.toUtc()),
+          )
+          .where('checkedIn', isLessThan: Timestamp.fromDate(end.toUtc()))
+          .orderBy('checkedIn', descending: false)
+          .get();
+
+      final last30Snap = await _db
+          .collection('attendance')
+          .where('gymId', isEqualTo: gymId)
+          .where(
+            'checkedIn',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(start30.toUtc()),
+          )
+          .where('checkedIn', isLessThan: Timestamp.fromDate(end.toUtc()))
           .orderBy('checkedIn', descending: false)
           .get();
 
@@ -369,15 +411,19 @@ class AdminService {
       final hourCounts = List<int>.filled(24, 0);
       int totalMinutes = 0;
       int completedCount = 0;
+      final uniqueMembers = <String>{};
 
       for (final d in snap.docs) {
         final data = d.data();
         final mid = data['memberId'] as String;
-        final checkedIn = (data['checkedIn'] as Timestamp?)?.toDate() ?? start;
-        final checkedOut = (data['checkedOut'] as Timestamp?)?.toDate();
+        uniqueMembers.add(mid);
+        final checkedIn = _toDateTime(data['checkedIn'], fallback: start);
+        final checkedOut = data['checkedOut'] == null
+            ? null
+            : _toDateTime(data['checkedOut'], fallback: checkedIn);
         hourCounts[checkedIn.hour]++;
         if (checkedOut != null) {
-          totalMinutes += checkedOut.difference(checkedIn).inMinutes;
+          totalMinutes += _safeDurationMinutes(checkedIn, checkedOut);
           completedCount++;
         }
         records.add({
@@ -388,6 +434,8 @@ class AdminService {
           'checkedOut': checkedOut,
           'source': data['source'] ?? 'auto',
           'workoutType': data['workoutType'] ?? '',
+          'sessionState': data['sessionState'] ?? 'legacy',
+          'checkInMethod': data['checkInMethod'] ?? 'legacy',
         });
       }
 
@@ -397,13 +445,42 @@ class AdminService {
       final avgMinutes = completedCount > 0
           ? totalMinutes ~/ completedCount
           : 0;
+      final openSessions = records.length - completedCount;
+      final missedCheckoutRate = records.isEmpty
+          ? 0.0
+          : openSessions / records.length;
+
+      final visits7ByMember = <String, int>{};
+      final visits30ByMember = <String, int>{};
+      for (final d in last30Snap.docs) {
+        final data = d.data();
+        final mid = data['memberId'] as String? ?? '';
+        if (mid.isEmpty) continue;
+        final checkedIn = _toDateTime(data['checkedIn'], fallback: start30);
+        visits30ByMember[mid] = (visits30ByMember[mid] ?? 0) + 1;
+        if (!checkedIn.isBefore(start7)) {
+          visits7ByMember[mid] = (visits7ByMember[mid] ?? 0) + 1;
+        }
+      }
+
+      final repeatMembers7d = visits7ByMember.values
+          .where((c) => c >= 2)
+          .length;
+      final repeatMembers30d = visits30ByMember.values
+          .where((c) => c >= 4)
+          .length;
 
       return {
         'records': records,
         'totalVisits': records.length,
+        'uniqueAttendees': uniqueMembers.length,
         'completed': completedCount,
+        'openSessions': openSessions,
+        'missedCheckoutRate': missedCheckoutRate,
         'avgMinutes': avgMinutes,
         'peakHour': peakHour,
+        'repeatMembers7d': repeatMembers7d,
+        'repeatMembers30d': repeatMembers30d,
         'hourCounts': hourCounts,
         'totalMinutes': totalMinutes,
       };
@@ -411,9 +488,14 @@ class AdminService {
       return {
         'records': [],
         'totalVisits': 0,
+        'uniqueAttendees': 0,
         'completed': 0,
+        'openSessions': 0,
+        'missedCheckoutRate': 0.0,
         'avgMinutes': 0,
         'peakHour': 0,
+        'repeatMembers7d': 0,
+        'repeatMembers30d': 0,
         'hourCounts': List<int>.filled(24, 0),
         'totalMinutes': 0,
       };
@@ -448,15 +530,16 @@ class AdminService {
       }).toList();
 
       final closed = records.where((r) => !r.isOpen).toList();
+      final open = records.where((r) => r.isOpen).toList();
       final totalMin = closed.fold<int>(
         0,
-        (s, r) => s + (r.duration?.inMinutes ?? 0),
+        (s, r) => s + _safeDurationMinutes(r.checkedIn, r.checkedOut!),
       );
       final avgMin = closed.isEmpty ? 0 : totalMin ~/ closed.length;
       final maxMin = closed.isEmpty
           ? 0
           : closed
-                .map((r) => r.duration?.inMinutes ?? 0)
+                .map((r) => _safeDurationMinutes(r.checkedIn, r.checkedOut!))
                 .reduce((a, b) => a > b ? a : b);
 
       // Last 30 days visit count
@@ -490,11 +573,16 @@ class AdminService {
           typeCount[r.workoutType!] = (typeCount[r.workoutType!] ?? 0) + 1;
         }
       }
+      final missedCheckoutRate = records.isEmpty
+          ? 0.0
+          : open.length / records.length;
 
       return {
         'records': records,
         'total': records.length,
         'completed': closed.length,
+        'openSessions': open.length,
+        'missedCheckoutRate': missedCheckoutRate,
         'totalMin': totalMin,
         'avgMin': avgMin,
         'maxMin': maxMin,
@@ -508,6 +596,8 @@ class AdminService {
         'records': [],
         'total': 0,
         'completed': 0,
+        'openSessions': 0,
+        'missedCheckoutRate': 0.0,
         'totalMin': 0,
         'avgMin': 0,
         'maxMin': 0,
@@ -525,8 +615,11 @@ class AdminService {
     try {
       final now = DateTime.now();
       final midnight = DateTime(now.year, now.month, now.day);
+      final tomorrow = midnight.add(const Duration(days: 1));
       final monthStart = DateTime(now.year, now.month, 1);
       final weekStart = now.subtract(const Duration(days: 7));
+      final start7 = tomorrow.subtract(const Duration(days: 7));
+      final start30 = tomorrow.subtract(const Duration(days: 30));
 
       final results = await Future.wait([
         _db
@@ -579,16 +672,100 @@ class AdminService {
             .where('resolved', isEqualTo: false)
             .count()
             .get(),
+        _db
+            .collection('attendance')
+            .where('gymId', isEqualTo: gymId)
+            .where(
+              'checkedIn',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(midnight.toUtc()),
+            )
+            .where(
+              'checkedIn',
+              isLessThan: Timestamp.fromDate(tomorrow.toUtc()),
+            )
+            .get(),
+        _db
+            .collection('attendance')
+            .where('gymId', isEqualTo: gymId)
+            .where(
+              'checkedIn',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(start30.toUtc()),
+            )
+            .where(
+              'checkedIn',
+              isLessThan: Timestamp.fromDate(tomorrow.toUtc()),
+            )
+            .get(),
       ]);
 
+      final todaySnap = results[7] as QuerySnapshot<Map<String, dynamic>>;
+      final last30Snap = results[8] as QuerySnapshot<Map<String, dynamic>>;
+      final uniqueTodayMembers = <String>{};
+      int completedToday = 0;
+      for (final d in todaySnap.docs) {
+        final data = d.data();
+        final mid = data['memberId'] as String? ?? '';
+        if (mid.isNotEmpty) uniqueTodayMembers.add(mid);
+        if (data['checkedOut'] != null) completedToday++;
+      }
+      final todayRecordCount = todaySnap.docs.length;
+      final missedCheckoutRateToday = todayRecordCount == 0
+          ? 0.0
+          : (todayRecordCount - completedToday) / todayRecordCount;
+
+      final visits7ByMember = <String, int>{};
+      final visits30ByMember = <String, int>{};
+      for (final d in last30Snap.docs) {
+        final data = d.data();
+        final mid = data['memberId'] as String? ?? '';
+        if (mid.isEmpty) continue;
+        final checkedIn = _toDateTime(data['checkedIn'], fallback: start30);
+        visits30ByMember[mid] = (visits30ByMember[mid] ?? 0) + 1;
+        if (!checkedIn.isBefore(start7)) {
+          visits7ByMember[mid] = (visits7ByMember[mid] ?? 0) + 1;
+        }
+      }
+      final repeatMembers7d = visits7ByMember.values
+          .where((c) => c >= 2)
+          .length;
+      final repeatMembers30d = visits30ByMember.values
+          .where((c) => c >= 4)
+          .length;
+
+      final totalMembers =
+          (((results[0] as AggregateQuerySnapshot).count) as num?)?.toInt() ??
+          0;
+      final insideNow =
+          (((results[1] as AggregateQuerySnapshot).count) as num?)?.toInt() ??
+          0;
+      final todayVisits =
+          (((results[2] as AggregateQuerySnapshot).count) as num?)?.toInt() ??
+          0;
+      final monthVisits =
+          (((results[3] as AggregateQuerySnapshot).count) as num?)?.toInt() ??
+          0;
+      final weekVisits =
+          (((results[4] as AggregateQuerySnapshot).count) as num?)?.toInt() ??
+          0;
+      final pendingVerify =
+          (((results[5] as AggregateQuerySnapshot).count) as num?)?.toInt() ??
+          0;
+      final openFeedback =
+          (((results[6] as AggregateQuerySnapshot).count) as num?)?.toInt() ??
+          0;
+
       return {
-        'totalMembers': results[0].count ?? 0,
-        'insideNow': results[1].count ?? 0,
-        'todayVisits': results[2].count ?? 0,
-        'monthVisits': results[3].count ?? 0,
-        'weekVisits': results[4].count ?? 0,
-        'pendingVerify': results[5].count ?? 0,
-        'openFeedback': results[6].count ?? 0,
+        'totalMembers': totalMembers,
+        'insideNow': insideNow,
+        'todayVisits': todayVisits,
+        'monthVisits': monthVisits,
+        'weekVisits': weekVisits,
+        'pendingVerify': pendingVerify,
+        'openFeedback': openFeedback,
+        'uniqueAttendeesToday': uniqueTodayMembers.length,
+        'missedCheckoutRateToday': missedCheckoutRateToday,
+        'repeatMembers7d': repeatMembers7d,
+        'repeatMembers30d': repeatMembers30d,
       };
     } catch (_) {
       return {
@@ -599,6 +776,10 @@ class AdminService {
         'weekVisits': 0,
         'pendingVerify': 0,
         'openFeedback': 0,
+        'uniqueAttendeesToday': 0,
+        'missedCheckoutRateToday': 0.0,
+        'repeatMembers7d': 0,
+        'repeatMembers30d': 0,
       };
     }
   }
@@ -633,10 +814,157 @@ class AdminService {
 
   // â”€â”€ Force checkout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+  static Future<List<Map<String, dynamic>>> getMemberAttendanceInsights(
+    String gymId, {
+    int lookbackDays = 30,
+  }) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final safeLookback = lookbackDays < 7 ? 7 : lookbackDays;
+    final startLookback = today.subtract(Duration(days: safeLookback - 1));
+    final start7 = today.subtract(const Duration(days: 6));
+
+    try {
+      final membersSnap = await _db
+          .collection('members')
+          .where('gymId', isEqualTo: gymId)
+          .get();
+
+      if (membersSnap.docs.isEmpty) {
+        return const <Map<String, dynamic>>[];
+      }
+
+      final summaries = <String, Map<String, dynamic>>{};
+      for (final doc in membersSnap.docs) {
+        final data = doc.data();
+        summaries[doc.id] = {
+          'id': doc.id,
+          'name': data['name'] as String? ?? 'Member',
+          'phone': data['phone'] as String? ?? '',
+          'membershipType': data['membershipType'] as String? ?? 'Basic',
+          'active': data['active'] as bool? ?? true,
+          'verificationStatus':
+              data['verificationStatus'] as String? ?? 'pending',
+          'visits7': 0,
+          'visits30': 0,
+          'totalMinutes30': 0,
+          'avgMinutes30': 0,
+          'openSession': false,
+          'lastSeen': null,
+          'streakDays': 0,
+        };
+      }
+
+      final attendanceSnap = await _db
+          .collection('attendance')
+          .where('gymId', isEqualTo: gymId)
+          .where(
+            'checkedIn',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startLookback.toUtc()),
+          )
+          .orderBy('checkedIn', descending: true)
+          .get();
+
+      final daysByMember = <String, Set<String>>{};
+      final completedByMember = <String, int>{};
+
+      for (final doc in attendanceSnap.docs) {
+        final data = doc.data();
+        final memberId = data['memberId'] as String? ?? '';
+        if (memberId.isEmpty) continue;
+        final summary = summaries[memberId];
+        if (summary == null) continue;
+
+        final checkedIn = _toDateTime(data['checkedIn'], fallback: now);
+        final checkedOut = data['checkedOut'] == null
+            ? null
+            : _toDateTime(data['checkedOut'], fallback: checkedIn);
+
+        summary['visits30'] = (summary['visits30'] as int) + 1;
+        if (!checkedIn.isBefore(start7)) {
+          summary['visits7'] = (summary['visits7'] as int) + 1;
+        }
+
+        if (summary['lastSeen'] == null ||
+            (summary['lastSeen'] as DateTime).isBefore(checkedIn)) {
+          summary['lastSeen'] = checkedIn;
+        }
+
+        daysByMember
+            .putIfAbsent(memberId, () => <String>{})
+            .add(_dayKey(checkedIn));
+
+        if (checkedOut == null) {
+          summary['openSession'] = true;
+          continue;
+        }
+
+        final minutes = _safeDurationMinutes(checkedIn, checkedOut);
+        summary['totalMinutes30'] =
+            (summary['totalMinutes30'] as int) + minutes;
+        completedByMember[memberId] = (completedByMember[memberId] ?? 0) + 1;
+      }
+
+      for (final entry in summaries.entries) {
+        final memberId = entry.key;
+        final summary = entry.value;
+
+        final completedSessions = completedByMember[memberId] ?? 0;
+        final totalMinutes = summary['totalMinutes30'] as int;
+        summary['avgMinutes30'] = completedSessions == 0
+            ? 0
+            : totalMinutes ~/ completedSessions;
+
+        final daySet = daysByMember[memberId] ?? const <String>{};
+        var streak = 0;
+        for (var i = 0; i < safeLookback; i++) {
+          final day = today.subtract(Duration(days: i));
+          if (daySet.contains(_dayKey(day))) {
+            streak++;
+          } else {
+            break;
+          }
+        }
+        summary['streakDays'] = streak;
+      }
+
+      final list = summaries.values.toList();
+      list.sort((a, b) {
+        final byVisits30 = (b['visits30'] as int).compareTo(
+          a['visits30'] as int,
+        );
+        if (byVisits30 != 0) return byVisits30;
+        final byVisits7 = (b['visits7'] as int).compareTo(a['visits7'] as int);
+        if (byVisits7 != 0) return byVisits7;
+        final aLast = a['lastSeen'] as DateTime?;
+        final bLast = b['lastSeen'] as DateTime?;
+        if (aLast == null && bLast == null) return 0;
+        if (aLast == null) return 1;
+        if (bLast == null) return -1;
+        return bLast.compareTo(aLast);
+      });
+      return list;
+    } catch (_) {
+      return const <Map<String, dynamic>>[];
+    }
+  }
+
   static Future<void> forceCheckout(String sessionId) async {
     try {
-      await _db.collection('attendance').doc(sessionId).update({
-        'checkedOut': FieldValue.serverTimestamp(),
+      final ref = _db.collection('attendance').doc(sessionId);
+      final checkedOutUtc = DateTime.now().toUtc();
+      await ref.update({
+        'checkedOut': Timestamp.fromDate(checkedOutUtc),
+        'checkedOutServerAt': FieldValue.serverTimestamp(),
+        'sessionState': 'force_checked_out',
+        'checkoutReason': 'force',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      await ref.collection('auditLogs').add({
+        'event': 'force_checkout',
+        'actor': 'admin',
+        'payload': {'checkedOutUtc': checkedOutUtc.toIso8601String()},
+        'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (_) {}
   }

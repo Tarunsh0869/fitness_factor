@@ -3,9 +3,10 @@
 import 'package:flutter/material.dart';
 import '../services/attendance_service.dart';
 import '../services/auth_prefs.dart';
+import '../services/firebase_service.dart';
 import 'edit_profile_screen.dart';
 import 'stats_screen.dart';
-import 'login_screen.dart';
+import 'onboarding/onboarding_flow_screen.dart';
 import 'member_feedback_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -59,12 +60,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (_) => EditProfileScreen(
-          memberId: widget.memberId,
-          initialName: m['name'] ?? '',
-          initialEmergency: m['emergencyContact'] ?? '',
-          initialMembership: m['membershipType'] ?? 'Basic',
-        ),
+        builder: (_) =>
+            EditProfileScreen(memberId: widget.memberId, initialProfile: m),
       ),
     );
     if (result != null) {
@@ -111,8 +108,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(
+        builder: (_) =>
+            OnboardingFlowScreen(onComplete: AuthPrefs.markOnboardingCompleted),
+      ),
       (_) => false,
+    );
+  }
+
+  Future<void> _enableNotifications() async {
+    final granted = await FirebaseService.requestNotificationPermission();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          granted
+              ? 'Notifications enabled.'
+              : 'Notifications were not enabled.',
+        ),
+      ),
     );
   }
 
@@ -171,6 +185,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                   ),
+                ),
+                _actionTile(
+                  icon: Icons.notifications_active_outlined,
+                  label: 'Enable Notifications',
+                  color: _blue,
+                  onTap: _enableNotifications,
                 ),
                 const SizedBox(height: 24),
                 SizedBox(

@@ -9,8 +9,7 @@ import '../services/auth_prefs.dart';
 import '../services/firebase_service.dart';
 import '../services/geo_service.dart';
 import '../widgets/exit_confirmation_sheet.dart';
-import 'attendance_form_screen.dart';
-import 'login_screen.dart';
+import 'onboarding/onboarding_flow_screen.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
 
@@ -53,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isInsideGym = false;
   bool _geoReady = false;
   bool _checkingArrival = false;
+  bool _manualCheckInLoading = false;
   List<AttendanceRecord> _history = [];
   AttendanceRecord? _openSession;
   Timer? _sessionTimer;
@@ -63,8 +63,9 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription? _historySub;
   Duration _elapsed = Duration.zero;
   String _memberPhone = '';
-  String _membership = '';
+  String _gymName = '';
   int _weekVisits = 0;
+  bool _geofenceStarted = false;
 
   int _selectedTab = 0;
 
@@ -100,9 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _history = records);
     });
 
-    await Future.wait([_loadMember(), _loadStats()]);
-    await _startGeofence();
-    await _syncArrivalByLocation(showFeedback: false);
+    await Future.wait([_loadMember(), _loadStats(), _loadGymName()]);
     _listenFcm();
   }
 
@@ -111,7 +110,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted || member == null) return;
     setState(() {
       _memberPhone = member['phone'] ?? '';
-      _membership = member['membershipType'] ?? '';
     });
   }
 
@@ -123,18 +121,33 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _startGeofence() async {
-    final granted = await GeoService.requestPermission();
-    if (!granted) return;
+  Future<void> _loadGymName() async {
     final gym = await AttendanceService.getGym(widget.gymId);
-    if (gym == null || !mounted) return;
+    if (!mounted) return;
+    final name = (gym?['name'] as String? ?? '').trim();
+    setState(() {
+      _gymName = name.isEmpty ? widget.gymId : name;
+    });
+  }
 
-    setState(() => _geoReady = true);
+  Future<bool> _ensureGeofenceStarted() async {
+    if (_geofenceStarted) return true;
+
+    final granted = await GeoService.requestPermission();
+    if (!granted) return false;
+    final gym = await AttendanceService.getGym(widget.gymId);
+    if (gym == null || !mounted) return false;
+
+    setState(() {
+      _geoReady = true;
+      _geofenceStarted = true;
+    });
     _geoSub = GeoService.watchGeofence(
       gymLat: (gym['latitude'] as num).toDouble(),
       gymLng: (gym['longitude'] as num).toDouble(),
       radiusMeters: (gym['radiusMeters'] as num).toDouble(),
     ).listen(_onGeofenceChange);
+    return true;
   }
 
   Future<_LocationAttendanceAction?> _applyLocationAttendance(
@@ -145,7 +158,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (isInside) {
       _autoCheckoutTimer?.cancel();
-      if (_openSession != null) return _LocationAttendanceAction.alreadyCheckedIn;
+      if (_openSession != null) {
+        return _LocationAttendanceAction.alreadyCheckedIn;
+      }
 
       final id = await AttendanceService.checkIn(widget.memberId, widget.gymId);
       return id == null
@@ -171,12 +186,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() => _checkingArrival = true);
     try {
-      final granted = await GeoService.requestPermission();
+      final granted = await _ensureGeofenceStarted();
       if (!mounted) return;
       if (!granted) {
         if (showFeedback) {
-          _showArrivalSnack('Location permission is needed to confirm arrival.',
-              color: _danger);
+          _showArrivalSnack(
+            'Location permission is needed to confirm arrival.',
+            color: _danger,
+          );
         }
         return;
       }
@@ -201,8 +218,10 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       if (isInside == null) {
         if (showFeedback) {
-          _showArrivalSnack('Could not read your current location.',
-              color: _danger);
+          _showArrivalSnack(
+            'Could not read your current location.',
+            color: _danger,
+          );
         }
         return;
       }
@@ -218,8 +237,10 @@ class _HomeScreenState extends State<HomeScreen> {
           _showArrivalSnack('You are already checked in.');
           break;
         case _LocationAttendanceAction.checkInFailed:
-          _showArrivalSnack('Arrival found, but check-in failed.',
-              color: _danger);
+          _showArrivalSnack(
+            'Arrival found, but check-in failed.',
+            color: _danger,
+          );
           break;
         case _LocationAttendanceAction.exitRequested:
           _showArrivalSnack('You are outside the gym. Exit confirmation sent.');
@@ -271,6 +292,86 @@ class _HomeScreenState extends State<HomeScreen> {
     _showArrivalSnack('Session checked out.');
   }
 
+  Future<void> _quickManualCheckIn() async {
+    if (_manualCheckInLoading || _openSession != null) return;
+    setState(() => _manualCheckInLoading = true);
+    try {
+      final sessionId = await AttendanceService.quickManualCheckIn(
+        memberId: widget.memberId,
+        gymId: widget.gymId,
+      );
+      if (!mounted) return;
+      if (sessionId == null) {
+        _showArrivalSnack(
+          'Could not check in. You may already have an open session.',
+          color: _danger,
+        );
+        return;
+      }
+      _showArrivalSnack('Manual check-in successful.');
+    } finally {
+      if (mounted) setState(() => _manualCheckInLoading = false);
+    }
+  }
+
+  Future<void> _checkInWithGymCode() async {
+    if (_openSession != null) return;
+    final ctrl = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: _cardBg,
+          title: const Text(
+            'Enter Gym QR Code',
+            style: TextStyle(color: _ink, fontWeight: FontWeight.w700),
+          ),
+          content: TextField(
+            controller: ctrl,
+            textCapitalization: TextCapitalization.characters,
+            decoration: InputDecoration(
+              hintText: 'e.g. FF-123',
+              hintStyle: TextStyle(color: _muted.withOpacity(0.5)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: _outline),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: _muted)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accent,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Check In'),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted || result == null || result.isEmpty) return;
+
+    final checkInResult = await AttendanceService.checkInWithGymCode(
+      memberId: widget.memberId,
+      gymCode: result,
+    );
+    if (!mounted) return;
+    if (checkInResult['ok'] == true) {
+      _showArrivalSnack('QR check-in successful.');
+      return;
+    }
+    _showArrivalSnack(
+      checkInResult['error'] as String? ?? 'QR check-in failed.',
+      color: _danger,
+    );
+  }
+
   void _listenFcm() {
     _fcmSub = FirebaseService.exitConfirmationStream().listen((_) {
       if (!mounted || _openSession == null) return;
@@ -288,7 +389,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _onRefresh() => Future.wait([_loadMember(), _loadStats()]);
+  Future<void> _onRefresh() =>
+      Future.wait([_loadMember(), _loadStats(), _loadGymName()]);
 
   Future<void> _logout() async {
     await AttendanceService.logout();
@@ -296,7 +398,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(
+        builder: (_) =>
+            OnboardingFlowScreen(onComplete: AuthPrefs.markOnboardingCompleted),
+      ),
       (_) => false,
     );
   }
@@ -319,19 +424,6 @@ class _HomeScreenState extends State<HomeScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => StatsScreen(memberId: widget.memberId)),
-    );
-  }
-
-  Future<void> _openAttendanceForm({AttendanceRecord? existing}) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AttendanceFormScreen(
-          memberId: widget.memberId,
-          gymId: widget.gymId,
-          existing: existing,
-        ),
-      ),
     );
   }
 
@@ -564,6 +656,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final firstInitial = widget.memberName.trim().isEmpty
         ? 'U'
         : widget.memberName.trim().substring(0, 1).toUpperCase();
+    final gymLabel = _gymName.isEmpty ? widget.gymId : _gymName;
 
     return Row(
       children: [
@@ -581,17 +674,33 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(width: 10),
-        const Expanded(
-          child: Text(
-            'Fitness Factor',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: _ink,
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              height: 1,
-            ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Fitness Factor',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: _ink,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                gymLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 10),
@@ -619,16 +728,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final statusText = _checkingArrival
         ? 'Checking your location...'
         : _openSession == null
-        ? 'Tap to confirm arrival by location'
+        ? 'Use location, manual, or QR check-in'
         : 'Session running ${_formatElapsed(_elapsed)}';
+    final anyLoading = _checkingArrival || _manualCheckInLoading;
 
     return InkWell(
-      onTap: _checkingArrival || _openSession != null
+      onTap: anyLoading || _openSession != null
           ? null
           : () => _syncArrivalByLocation(),
       borderRadius: BorderRadius.circular(18),
       child: Ink(
-        height: _openSession == null ? 168 : 212,
+        height: _openSession == null ? 252 : 212,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [_accentDark, _accent],
@@ -690,7 +800,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white.withOpacity(0.16),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: _checkingArrival
+                    child: anyLoading
                         ? const Padding(
                             padding: EdgeInsets.all(12),
                             child: CircularProgressIndicator(
@@ -721,6 +831,70 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontSize: 13,
                     ),
                   ),
+                  if (_openSession == null) ...[
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _checkingArrival
+                              ? null
+                              : _syncArrivalByLocation,
+                          icon: const Icon(Icons.my_location_rounded, size: 16),
+                          label: const Text('Use Location'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: _accentDark,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: _manualCheckInLoading
+                              ? null
+                              : _quickManualCheckIn,
+                          icon: const Icon(Icons.touch_app_outlined, size: 16),
+                          label: const Text('Quick Check-In'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white.withOpacity(0.9),
+                            foregroundColor: _accentDark,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: _checkInWithGymCode,
+                      icon: const Icon(
+                        Icons.qr_code_2_rounded,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Check In with QR Code',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                   if (_openSession != null) ...[
                     const SizedBox(height: 14),
                     SizedBox(
@@ -953,16 +1127,14 @@ class _HomeScreenState extends State<HomeScreen> {
         final marginX = tiny ? 8.0 : (compact ? 10.0 : 14.0);
         final paddingX = tiny ? 6.0 : (compact ? 8.0 : 10.0);
         final paddingY = tiny ? 7.0 : 9.0;
-        final itemWidth = (width - (marginX * 2) - (paddingX * 2)) /
-            items.length;
-        final activePillWidth = (itemWidth - 8).clamp(
-          38.0,
-          tiny ? 46.0 : (compact ? 52.0 : 58.0),
-        ).toDouble();
-        final inactivePillWidth = (itemWidth - 14).clamp(
-          34.0,
-          tiny ? 40.0 : 46.0,
-        ).toDouble();
+        final itemWidth =
+            (width - (marginX * 2) - (paddingX * 2)) / items.length;
+        final activePillWidth = (itemWidth - 8)
+            .clamp(38.0, tiny ? 46.0 : (compact ? 52.0 : 58.0))
+            .toDouble();
+        final inactivePillWidth = (itemWidth - 14)
+            .clamp(34.0, tiny ? 40.0 : 46.0)
+            .toDouble();
         final pillHeight = tiny ? 30.0 : 34.0;
         final labelFontSize = tiny ? 9.5 : (compact ? 10.0 : 11.0);
 

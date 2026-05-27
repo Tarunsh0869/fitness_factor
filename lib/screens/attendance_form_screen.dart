@@ -122,6 +122,17 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
   }
 
   Future<void> _submit() async {
+    if (_checkedOut != null && _checkedOut!.isBefore(_checkedIn)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Check-out time cannot be before check-in time.'),
+          backgroundColor: _red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() => _loading = true);
     bool success;
     if (_isEdit) {
@@ -130,6 +141,8 @@ class _AttendanceFormScreenState extends State<AttendanceFormScreen> {
         workoutType: _workoutType,
         notes: _notesCtrl.text.trim(),
         checkedOut: _checkedOut,
+        editedBy: 'member',
+        correctionNote: 'member_form_edit',
       );
     } else {
       final id = await AttendanceService.manualCheckIn(

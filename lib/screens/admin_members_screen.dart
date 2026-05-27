@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/admin_service.dart';
+import 'admin_attendee_stats_screen.dart';
 import 'admin_member_detail_screen.dart';
 
 class AdminMembersScreen extends StatefulWidget {
@@ -80,6 +81,18 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
           'Members (${_all.length})',
           style: const TextStyle(fontWeight: FontWeight.w700, color: _ink),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart_outlined, color: _blue),
+            tooltip: 'Attendee Stats',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AdminAttendeeStatsScreen(gymId: widget.gymId),
+              ),
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(

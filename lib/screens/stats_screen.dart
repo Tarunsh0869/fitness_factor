@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../services/attendance_service.dart';
 
 class StatsScreen extends StatefulWidget {
@@ -15,6 +16,7 @@ class _StatsScreenState extends State<StatsScreen> {
   static const _blue = Color(0xFF035C4A);
   static const _green = Color(0xFF0A8F69);
   static const _red = Color(0xFFB3261E);
+  static const _amber = Color(0xFFC7A66A);
   static const _bg = Color(0xFFF9F7F2);
   static const _card = Color(0xFFF3F2ED);
   static const _ink = Color(0xFF2A323E);
@@ -32,11 +34,12 @@ class _StatsScreenState extends State<StatsScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     final s = await AttendanceService.getStats(widget.memberId);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _stats = s;
         _loading = false;
       });
+    }
   }
 
   @override
@@ -74,6 +77,10 @@ class _StatsScreenState extends State<StatsScreen> {
                   _buildBarChart(),
                   const SizedBox(height: 16),
                   _buildTimeCard(),
+                  const SizedBox(height: 16),
+                  _buildAttendanceQualityCard(),
+                  const SizedBox(height: 16),
+                  _buildCadenceCard(),
                   const SizedBox(height: 16),
                   _buildWorkoutBreakdown(),
                 ],
@@ -524,6 +531,97 @@ class _StatsScreenState extends State<StatsScreen> {
               ),
             );
           }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAttendanceQualityCard() {
+    final openSessions = _stats!['openSessions'] as int? ?? 0;
+    final missedRate = (_stats!['missedCheckoutRate'] as num?)?.toDouble() ?? 0;
+    final peakHour = _stats!['peakHour'] as int? ?? -1;
+    final peakHourStr = peakHour >= 0
+        ? DateFormat('ha').format(DateTime(2000, 1, 1, peakHour))
+        : '-';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Attendance Quality',
+            style: TextStyle(
+              color: _ink,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _timeStat(
+                  'Missed Check-outs',
+                  '${(missedRate * 100).toStringAsFixed(1)}%',
+                  _red,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _timeStat('Open Sessions', '$openSessions', _amber),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: _timeStat('Peak Hour', peakHourStr, _blue)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCadenceCard() {
+    final visitsLast7 = _stats!['visitsLast7'] as int? ?? 0;
+    final visitsLast30 = _stats!['visitsLast30'] as int? ?? 0;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _timeStat('Visits (7d)', '$visitsLast7', _green)),
+          const SizedBox(width: 12),
+          Expanded(child: _timeStat('Visits (30d)', '$visitsLast30', _blue)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _timeStat(
+              'Consistency',
+              visitsLast30 == 0
+                  ? '0%'
+                  : '${((visitsLast7 / visitsLast30) * 100).toStringAsFixed(0)}%',
+              _amber,
+            ),
+          ),
         ],
       ),
     );

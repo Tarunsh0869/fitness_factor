@@ -44,7 +44,7 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
   Future<void> _load() async {
     final results = await Future.wait([
       AttendanceService.getMember(widget.memberId),
-      AttendanceService.getStats(widget.memberId),
+      AdminService.getMemberAttendanceStats(widget.memberId),
     ]);
     if (mounted) {
       setState(() {
@@ -230,7 +230,7 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
   }
 
   Widget _buildProfileCard() {
-    final name = _member?['name'] as String? ?? '—';
+    final name = _member?['name'] as String? ?? 'â€”';
     final membership = _member?['membershipType'] as String? ?? 'Basic';
     final active = _member?['active'] as bool? ?? true;
     final vs = _member?['verificationStatus'] as String? ?? 'pending';
@@ -309,7 +309,7 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      _member?['phone'] as String? ?? '—',
+                      _member?['phone'] as String? ?? 'â€”',
                       style: TextStyle(color: _muted, fontSize: 13),
                     ),
                     const SizedBox(height: 6),
@@ -355,9 +355,13 @@ class _AdminMemberDetailScreenState extends State<AdminMemberDetailScreen> {
                 children: [
                   Icon(Icons.access_time_outlined, color: _muted, size: 14),
                   const SizedBox(width: 6),
-                  Text(
-                    'Last seen: ${DateFormat('EEE, MMM d · hh:mm a').format(lastSeen)}',
-                    style: TextStyle(color: _muted, fontSize: 12),
+                  Expanded(
+                    child: Text(
+                      'Last seen: ${DateFormat('EEE, MMM d · hh:mm a').format(lastSeen)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: _muted, fontSize: 12),
+                    ),
                   ),
                 ],
               ),

@@ -36,15 +36,32 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
   String? _processingStatus;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _multiSelectMode = false;
+  final Set<String> _selectedMemberIds = <String>{};
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
+    _tabs.addListener(() {
+      if (!mounted || _tabs.indexIsChanging) return;
+      setState(() {});
+    });
     _pendingSub = AdminService.pendingVerificationStream(widget.gymId).listen((
       list,
     ) {
-      if (mounted) setState(() => _pending = list);
+      if (mounted) {
+        setState(() {
+          _pending = list;
+          final pendingIds = list
+              .map((member) => member['id'] as String)
+              .toSet();
+          _selectedMemberIds.removeWhere((id) => !pendingIds.contains(id));
+          if (_multiSelectMode && _selectedMemberIds.isEmpty && list.isEmpty) {
+            _multiSelectMode = false;
+          }
+        });
+      }
     });
     _allSub = AdminService.membersStream(widget.gymId).listen((list) {
       if (mounted) setState(() => _all = list);
@@ -87,8 +104,8 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
     }).toList();
   }
 
-  Future<void> _setStatus(String memberId, String status) async {
-    await AdminService.updateVerificationStatus(memberId, status);
+  Future<bool> _setStatus(String memberId, String status) async {
+    return AdminService.updateVerificationStatus(memberId, status);
   }
 
   Future<void> _handleAction(String memberId, String status) async {
@@ -100,7 +117,8 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
     });
 
     try {
-      await _setStatus(memberId, status);
+      final ok = await _setStatus(memberId, status);
+      if (!ok) throw Exception('Could not update member status');
 
       if (!mounted) return;
 
@@ -147,105 +165,314 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
     }
   }
 
+  void _enterMultiSelectMode() {
+    setState(() {
+      _multiSelectMode = true;
+      _selectedMemberIds.clear();
+    });
+  }
+
+  void _exitMultiSelectMode() {
+    setState(() {
+      _multiSelectMode = false;
+      _selectedMemberIds.clear();
+    });
+  }
+
+  void _toggleMemberSelection(String memberId) {
+    setState(() {
+      if (_selectedMemberIds.contains(memberId)) {
+        _selectedMemberIds.remove(memberId);
+      } else {
+        _selectedMemberIds.add(memberId);
+      }
+    });
+  }
+
+  void _toggleSelectAllVisiblePending() {
+    final visibleIds = _filteredPending.map((m) => m['id'] as String).toSet();
+    if (visibleIds.isEmpty) return;
+    setState(() {
+      final allSelected = visibleIds.every(_selectedMemberIds.contains);
+      if (allSelected) {
+        _selectedMemberIds.removeAll(visibleIds);
+      } else {
+        _selectedMemberIds.addAll(visibleIds);
+      }
+    });
+  }
+
+  Future<void> _showMultiSelectActions() async {
+    if (_selectedMemberIds.isEmpty) return;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: _subtle.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Apply to ${_selectedMemberIds.length} selected',
+                    style: const TextStyle(
+                      color: _ink,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _BulkActionTile(
+                    icon: Icons.check_circle_outlined,
+                    label: 'Verify Selected',
+                    subtitle: 'Mark selected members as verified',
+                    color: _green,
+                    mutedColor: _muted,
+                    onTap: () => Navigator.pop(context, 'verified'),
+                  ),
+                  _BulkActionTile(
+                    icon: Icons.block_outlined,
+                    label: 'Reject Selected',
+                    subtitle: 'Mark selected members as rejected',
+                    color: _red,
+                    mutedColor: _muted,
+                    onTap: () => Navigator.pop(context, 'rejected'),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: _muted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (action == null) return;
+    await _applyMultiSelectAction(action);
+  }
+
+  Future<void> _applyMultiSelectAction(String status) async {
+    final memberIds = _selectedMemberIds.toList(growable: false);
+    if (memberIds.isEmpty) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _card,
+        title: Text(
+          status == 'verified' ? 'Verify Members?' : 'Reject Members?',
+          style: const TextStyle(color: _ink, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          '${status == 'verified' ? 'Verify' : 'Reject'} ${memberIds.length} selected members?',
+          style: TextStyle(color: _muted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: TextStyle(color: _muted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              status == 'verified' ? 'Verify' : 'Reject',
+              style: TextStyle(
+                color: status == 'verified' ? _green : _red,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '${status == 'verified' ? 'Verifying' : 'Rejecting'} ${memberIds.length} members...',
+            ),
+          ],
+        ),
+        backgroundColor: status == 'verified' ? _green : _red,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 6),
+      ),
+    );
+
+    var successCount = 0;
+    for (final memberId in memberIds) {
+      final ok = await _setStatus(memberId, status);
+      if (ok) successCount++;
+    }
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${status == 'verified' ? 'Verified' : 'Rejected'} $successCount of ${memberIds.length} members',
+        ),
+        backgroundColor: status == 'verified' ? _green : _red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    setState(() {
+      for (final id in memberIds) {
+        _selectedMemberIds.remove(id);
+      }
+      if (_selectedMemberIds.isEmpty) {
+        _multiSelectMode = false;
+      }
+    });
+  }
+
   Future<void> _showBulkActions() async {
     final result = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: _card,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: _subtle.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Container(
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
                 ),
               ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Bulk Actions',
-                  style: TextStyle(
-                    color: _ink,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Apply action to all ${_filteredPending.length} pending members',
-                  style: TextStyle(color: _muted, fontSize: 13),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 24),
-              _BulkActionTile(
-                icon: Icons.check_circle_outlined,
-                label: 'Verify All',
-                subtitle: 'Approve all pending members',
-                color: _green,
-                mutedColor: _muted,
-                onTap: () => Navigator.pop(context, 1),
-              ),
-              _BulkActionTile(
-                icon: Icons.block_outlined,
-                label: 'Reject All',
-                subtitle: 'Reject all pending members',
-                color: _red,
-                mutedColor: _muted,
-                onTap: () => Navigator.pop(context, 2),
-              ),
-              _BulkActionTile(
-                icon: Icons.filter_list_outlined,
-                label: 'Select Multiple',
-                subtitle: 'Choose specific members to act on',
-                color: _blue,
-                mutedColor: _muted,
-                onTap: () => Navigator.pop(context, 3),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context, 0),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      backgroundColor: _bg,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: _subtle.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(2),
                     ),
+                  ),
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Text(
-                      'Cancel',
+                      'Bulk Actions',
                       style: TextStyle(
-                        color: _muted,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        color: _ink,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'Apply action to all ${_filteredPending.length} pending members',
+                      style: TextStyle(color: _muted, fontSize: 13),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _BulkActionTile(
+                    icon: Icons.check_circle_outlined,
+                    label: 'Verify All',
+                    subtitle: 'Approve all pending members',
+                    color: _green,
+                    mutedColor: _muted,
+                    onTap: () => Navigator.pop(context, 1),
+                  ),
+                  _BulkActionTile(
+                    icon: Icons.block_outlined,
+                    label: 'Reject All',
+                    subtitle: 'Reject all pending members',
+                    color: _red,
+                    mutedColor: _muted,
+                    onTap: () => Navigator.pop(context, 2),
+                  ),
+                  _BulkActionTile(
+                    icon: Icons.filter_list_outlined,
+                    label: 'Select Multiple',
+                    subtitle: 'Choose specific members to act on',
+                    color: _blue,
+                    mutedColor: _muted,
+                    onTap: () => Navigator.pop(context, 3),
+                  ),
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context, 0),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          backgroundColor: _bg,
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: _muted,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
               ),
-              const SizedBox(height: 32),
-            ],
+            ),
           ),
         );
       },
@@ -256,15 +483,17 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
     } else if (result == 2) {
       await _bulkRejectAll();
     } else if (result == 3 && mounted) {
-      // TODO: Implement multi-select mode
+      _enterMultiSelectMode();
+      _tabs.animateTo(0);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Multi-select coming soon!'),
+          content: const Text('Multi-select enabled. Tap members to select.'),
           backgroundColor: _blue,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -443,9 +672,27 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
         foregroundColor: _ink,
         elevation: 0,
         title: Text(
-          'Member Verification (${_pending.length} pending)',
+          _multiSelectMode
+              ? '${_selectedMemberIds.length} selected'
+              : 'Member Verification (${_pending.length} pending)',
           style: const TextStyle(fontWeight: FontWeight.w700, color: _ink),
         ),
+        actions: _multiSelectMode && _tabs.index == 0
+            ? [
+                IconButton(
+                  tooltip: 'Select all visible',
+                  onPressed: _toggleSelectAllVisiblePending,
+                  icon: const Icon(Icons.select_all_outlined),
+                ),
+                TextButton(
+                  onPressed: _exitMultiSelectMode,
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ]
+            : null,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(110),
           child: Column(
@@ -562,8 +809,28 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
           _memberList(_rejected, showActions: false),
         ],
       ),
-      floatingActionButton: _tabs.index == 0 && _filteredPending.isNotEmpty
+      floatingActionButton: _tabs.index != 0 || _filteredPending.isEmpty
+          ? null
+          : _multiSelectMode
           ? FloatingActionButton.extended(
+              onPressed: _selectedMemberIds.isEmpty
+                  ? null
+                  : _showMultiSelectActions,
+              backgroundColor: _selectedMemberIds.isEmpty ? _subtle : _blue,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              icon: const Icon(Icons.playlist_add_check_outlined, size: 20),
+              label: Text(
+                _selectedMemberIds.isEmpty
+                    ? 'Select Members'
+                    : 'Apply (${_selectedMemberIds.length})',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            )
+          : FloatingActionButton.extended(
               onPressed: _showBulkActions,
               backgroundColor: _blue,
               foregroundColor: Colors.white,
@@ -576,8 +843,7 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                 'Bulk Actions',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-            )
-          : null,
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
@@ -586,6 +852,7 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
     List<Map<String, dynamic>> members, {
     required bool showActions,
   }) {
+    final showMultiSelectBanner = showActions && _multiSelectMode;
     if (members.isEmpty) {
       return Center(
         child: Column(
@@ -699,6 +966,15 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                   ),
                 ),
               ),
+            if (showMultiSelectBanner)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  'Multi-select is on. Clear filters or switch to pending members to continue.',
+                  style: TextStyle(color: _muted, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              ),
           ],
         ),
       );
@@ -713,25 +989,67 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
       backgroundColor: _card,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
-        itemCount: members.length,
+        itemCount: members.length + (showMultiSelectBanner ? 1 : 0),
         separatorBuilder: (_, i) => const SizedBox(height: 8),
-        itemBuilder: (_, i) =>
-            _memberTile(members[i], showActions: showActions),
+        itemBuilder: (_, i) {
+          if (showMultiSelectBanner && i == 0) {
+            final visibleIds = _filteredPending
+                .map((member) => member['id'] as String)
+                .toSet();
+            final selectedVisible = visibleIds
+                .where(_selectedMemberIds.contains)
+                .length;
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: _blue.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _blue.withOpacity(0.25)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.touch_app_outlined, color: _blue, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '$selectedVisible selected on this screen (${_selectedMemberIds.length} total)',
+                      style: const TextStyle(
+                        color: _blue,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _toggleSelectAllVisiblePending,
+                    child: const Text('Toggle all'),
+                  ),
+                ],
+              ),
+            );
+          }
+          final memberIndex = showMultiSelectBanner ? i - 1 : i;
+          return _memberTile(members[memberIndex], showActions: showActions);
+        },
       ),
     );
   }
 
   Widget _memberTile(Map<String, dynamic> m, {required bool showActions}) {
-    final name = m['name'] as String? ?? '—';
-    final phone = m['phone'] as String? ?? '—';
+    final memberId = m['id'] as String;
+    final name = m['name'] as String? ?? '-';
+    final phone = m['phone'] as String? ?? '-';
     final membership = m['membershipType'] as String? ?? 'Basic';
-    final gender = m['gender'] as String? ?? '—';
+    final gender = m['gender'] as String? ?? '-';
     final vs = m['verificationStatus'] as String? ?? 'pending';
+    final selectable = showActions && _multiSelectMode;
+    final selected = _selectedMemberIds.contains(memberId);
 
     final membershipColors = {
       'Basic': _blue,
       'Premium': _amber,
       'VIP': const Color(0xFF535E62),
+      'Free': _blue,
     };
     final mColor = membershipColors[membership] ?? _blue;
 
@@ -741,26 +1059,33 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
         ? _red
         : _amber;
 
-    // Parse join date
-    String joinedStr = '—';
+    String joinedStr = '-';
     try {
       final raw = m['createdAt'];
-      if (raw != null) {
-        final dt = raw is DateTime ? raw : DateTime.tryParse(raw.toString());
+      if (raw is DateTime) {
+        joinedStr = DateFormat('MMM d, yyyy').format(raw);
+      } else if (raw != null && raw.toString().isNotEmpty) {
+        final dt = DateTime.tryParse(raw.toString());
         if (dt != null) joinedStr = DateFormat('MMM d, yyyy').format(dt);
       }
     } catch (_) {}
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AdminMemberDetailScreen(
-            memberId: m['id'] as String,
-            gymId: widget.gymId,
+      onTap: () {
+        if (selectable) {
+          _toggleMemberSelection(memberId);
+          return;
+        }
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AdminMemberDetailScreen(
+              memberId: memberId,
+              gymId: widget.gymId,
+            ),
           ),
-        ),
-      ),
+        );
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
@@ -768,7 +1093,9 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
         decoration: BoxDecoration(
           color: _card,
           borderRadius: BorderRadius.circular(16),
-          border: vs == 'pending'
+          border: selected
+              ? Border.all(color: _blue, width: 2)
+              : vs == 'pending'
               ? Border.all(color: _amber.withOpacity(0.3), width: 1.5)
               : vs == 'verified'
               ? Border.all(color: _green.withOpacity(0.2), width: 1)
@@ -788,6 +1115,24 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
           children: [
             Row(
               children: [
+                if (selectable) ...[
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: selected ? _blue : Colors.transparent,
+                      border: Border.all(
+                        color: selected ? _blue : _subtle.withOpacity(0.5),
+                        width: 2,
+                      ),
+                    ),
+                    child: selected
+                        ? const Icon(Icons.check, color: Colors.white, size: 14)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                ],
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   width: 48,
@@ -892,10 +1237,20 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
             const SizedBox(height: 12),
             Row(
               children: [
-                _infoChip(Icons.person_outline, gender),
-                const SizedBox(width: 10),
-                _infoChip(Icons.calendar_today_outlined, 'Joined $joinedStr'),
-                const Spacer(),
+                Expanded(
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 6,
+                    children: [
+                      _infoChip(Icons.person_outline, gender),
+                      _infoChip(
+                        Icons.calendar_today_outlined,
+                        'Joined $joinedStr',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   padding: const EdgeInsets.symmetric(
@@ -946,7 +1301,7 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                 ),
               ],
             ),
-            if (showActions) ...[
+            if (showActions && !selectable) ...[
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -956,9 +1311,9 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                       icon: Icons.check_circle_outlined,
                       color: _green,
                       isLoading:
-                          _processingId == m['id'] &&
+                          _processingId == memberId &&
                           _processingStatus == 'verified',
-                      onTap: () => _handleAction(m['id'] as String, 'verified'),
+                      onTap: () => _handleAction(memberId, 'verified'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -968,9 +1323,9 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                       icon: Icons.cancel_outlined,
                       color: _red,
                       isLoading:
-                          _processingId == m['id'] &&
+                          _processingId == memberId &&
                           _processingStatus == 'rejected',
-                      onTap: () => _handleAction(m['id'] as String, 'rejected'),
+                      onTap: () => _handleAction(memberId, 'rejected'),
                     ),
                   ),
                 ],

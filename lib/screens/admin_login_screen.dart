@@ -54,23 +54,23 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     setState(() => _loading = true);
     final pinStr = _pin.join();
     final resolvedGymId = await AdminService.resolveGymId(gymInput);
-    final ok = resolvedGymId != null &&
+    final isAuthorized =
+        resolvedGymId != null &&
         await AdminService.verifyAdminPin(resolvedGymId, pinStr);
+    final gymId = isAuthorized ? resolvedGymId : null;
     if (!mounted) return;
     setState(() => _loading = false);
-    if (ok && resolvedGymId != null) {
+    if (gymId != null) {
       await AuthPrefs.save(
         memberId: 'admin',
         memberName: 'Admin',
-        gymId: resolvedGymId,
+        gymId: gymId,
         isAdmin: true,
       );
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => AdminDashboardScreen(gymId: resolvedGymId),
-        ),
+        MaterialPageRoute(builder: (_) => AdminDashboardScreen(gymId: gymId)),
       );
     } else {
       setState(() {
@@ -88,6 +88,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final pagePadding = width < 360 ? 16.0 : 32.0;
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
@@ -101,7 +103,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(pagePadding),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -241,38 +243,56 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   }
 
   Widget _buildNumpad() {
-    return Column(
-      children: [
-        for (final row in [
-          [1, 2, 3],
-          [4, 5, 6],
-          [7, 8, 9],
-          [-1, 0, -2], // -1 = empty, -2 = delete
-        ])
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: row.map((d) {
-                if (d == -1) return const SizedBox(width: 80, height: 64);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: _numKey(d),
-                );
-              }).toList(),
-            ),
-          ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 10.0;
+        final keyWidth = ((constraints.maxWidth - (gap * 2)) / 3)
+            .clamp(58.0, 80.0)
+            .toDouble();
+        final keyHeight = (keyWidth * 0.86).clamp(52.0, 68.0).toDouble();
+
+        List<Widget> rowWidgets(List<int> row) {
+          final cells = <Widget>[];
+          for (var i = 0; i < row.length; i++) {
+            if (i > 0) cells.add(const SizedBox(width: gap));
+            final d = row[i];
+            if (d == -1) {
+              cells.add(SizedBox(width: keyWidth, height: keyHeight));
+            } else {
+              cells.add(_numKey(d, width: keyWidth, height: keyHeight));
+            }
+          }
+          return cells;
+        }
+
+        return Column(
+          children: [
+            for (final row in const [
+              [1, 2, 3],
+              [4, 5, 6],
+              [7, 8, 9],
+              [-1, 0, -2], // -1 = empty, -2 = delete
+            ])
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: rowWidgets(row),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _numKey(int d) {
+  Widget _numKey(int d, {required double width, required double height}) {
     final isDelete = d == -2;
     return GestureDetector(
       onTap: isDelete ? _onDelete : () => _onKey(d),
       child: Container(
-        width: 72,
-        height: 64,
+        width: width,
+        height: height,
         decoration: BoxDecoration(
           color: _card,
           borderRadius: BorderRadius.circular(16),

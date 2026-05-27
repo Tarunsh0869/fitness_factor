@@ -9,16 +9,37 @@ class FirebaseService {
 
   static Future<void> init() async {
     try {
-      await FirebaseMessaging.instance.requestPermission(
+      final settings = await FirebaseMessaging.instance
+          .getNotificationSettings();
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        final token = await FirebaseMessaging.instance.getToken();
+        if (token != null) await _saveToken(token);
+      }
+      FirebaseMessaging.instance.onTokenRefresh.listen(_saveToken);
+    } catch (e) {
+      debugPrint('[FirebaseService] init failed: $e');
+    }
+  }
+
+  static Future<bool> requestNotificationPermission() async {
+    try {
+      final settings = await FirebaseMessaging.instance.requestPermission(
         alert: true,
         badge: true,
         sound: true,
       );
+      final granted =
+          settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+      if (!granted) return false;
+
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) await _saveToken(token);
-      FirebaseMessaging.instance.onTokenRefresh.listen(_saveToken);
+      return true;
     } catch (e) {
-      debugPrint('[FirebaseService] init failed: $e');
+      debugPrint('[FirebaseService] requestNotificationPermission failed: $e');
+      return false;
     }
   }
 

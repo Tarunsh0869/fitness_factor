@@ -4,13 +4,18 @@ import 'package:flutter/material.dart';
 import '../services/attendance_service.dart';
 import '../services/firebase_service.dart';
 import '../services/auth_prefs.dart';
+import '../services/guest_session_service.dart';
 import '../widgets/fitness_factor_logo.dart';
+import 'complete_profile_screen.dart';
+import 'guest_experience_screen.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 import 'admin_login_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final bool launchedFromGuest;
+
+  const LoginScreen({super.key, this.launchedFromGuest = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -92,22 +97,52 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     FirebaseService.setMemberId(result['memberId']);
+    await _mergeGuestData(result['memberId'] as String);
+    final memberName = ((result['name'] as String?) ?? '').trim().isEmpty
+        ? 'Member'
+        : (result['name'] as String);
+    final gymId = (result['gymId'] as String?) ?? '';
     await AuthPrefs.save(
       memberId: result['memberId'],
-      memberName: result['name'],
-      gymId: result['gymId'],
+      memberName: memberName,
+      gymId: gymId,
     );
     if (!mounted) return;
+    final profileCompleted = result['profileCompleted'] == true;
+    if (!profileCompleted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CompleteProfileScreen(
+            memberId: result['memberId'] as String,
+            memberName: memberName,
+            gymId: gymId,
+          ),
+        ),
+      );
+      return;
+    }
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (_) => HomeScreen(
           memberId: result['memberId'],
-          memberName: result['name'],
-          gymId: result['gymId'],
+          memberName: memberName,
+          gymId: gymId,
         ),
       ),
     );
+  }
+
+  Future<void> _mergeGuestData(String memberId) async {
+    final guest = await GuestSessionService.load();
+    await AttendanceService.mergeGuestSessionData(
+      memberId: memberId,
+      starterWorkoutsCompleted: guest['starterWorkoutsCompleted'] as int,
+      meaningfulActionCount: guest['meaningfulActionCount'] as int,
+      lastAction: guest['lastAction'] as String,
+    );
+    await GuestSessionService.clear();
   }
 
   @override
@@ -183,7 +218,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'Welcome back. Use email/password or Google to continue.',
+                          widget.launchedFromGuest
+                              ? 'Sign in to save your guest progress and unlock personalization.'
+                              : 'Welcome back. Use email/password or Google to continue.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: _muted,
@@ -338,6 +375,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  if (!widget.launchedFromGuest)
+                    Center(
+                      child: TextButton(
+                        onPressed: () => Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const GuestExperienceScreen(),
+                          ),
+                        ),
+                        child: const Text(
+                          'Try as Guest',
+                          style: TextStyle(
+                            color: _blue,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 32),
                 ],
               ),
