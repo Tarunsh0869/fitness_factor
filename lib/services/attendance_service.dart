@@ -253,6 +253,49 @@ class AttendanceService {
     }
   }
 
+  static String normalizeGymCode(String code) {
+    final normalized = code.trim().toUpperCase().replaceAll(
+      RegExp(r'[^A-Z0-9]+'),
+      '-',
+    );
+    return normalized.replaceAll(RegExp(r'^-+|-+$'), '');
+  }
+
+  static Future<Map<String, dynamic>?> findGymByCode(String code) async {
+    final normalized = normalizeGymCode(code);
+    if (normalized.isEmpty) return null;
+
+    try {
+      final snap = await _db
+          .collection('gyms')
+          .where('gymCodeNormalized', isEqualTo: normalized)
+          .limit(1)
+          .get();
+      if (snap.docs.isNotEmpty) {
+        final doc = snap.docs.first;
+        return {'id': doc.id, ...doc.data()};
+      }
+
+      final legacySnap = await _db
+          .collection('gyms')
+          .where('gymCode', isEqualTo: normalized)
+          .limit(1)
+          .get();
+      if (legacySnap.docs.isNotEmpty) {
+        final doc = legacySnap.docs.first;
+        return {'id': doc.id, ...doc.data()};
+      }
+
+      if (normalized == normalizeGymCode(BasicGymConfig.gymCode)) {
+        final doc = await _db.collection('gyms').doc(BasicGymConfig.gymId).get();
+        if (doc.exists) return {'id': doc.id, ...doc.data()!};
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<bool> updateGymLocation(
     String gymId,
     double lat,

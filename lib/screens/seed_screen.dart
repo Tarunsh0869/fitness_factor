@@ -33,6 +33,8 @@ class _SeedScreenState extends State<SeedScreen> {
     try {
       await db.collection('gyms').doc(BasicGymConfig.gymId).set({
         'name': BasicGymConfig.name,
+        'gymCode': BasicGymConfig.gymCode,
+        'gymCodeNormalized': BasicGymConfig.gymCode,
         'latitude': BasicGymConfig.latitude,
         'longitude': BasicGymConfig.longitude,
         'radiusMeters': BasicGymConfig.radiusMeters,
@@ -176,8 +178,8 @@ class _SeedScreenState extends State<SeedScreen> {
                           const SizedBox(height: 10),
                           _credRow(
                             Icons.fitness_center,
-                            'Gym ID',
-                            BasicGymConfig.name,
+                            'Gym Code',
+                            BasicGymConfig.gymCode,
                           ),
                           const SizedBox(height: 10),
                           _credRow(

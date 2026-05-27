@@ -46,27 +46,31 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   }
 
   Future<void> _verify() async {
-    final gymId = AdminService.normalizeGymId(_gymIdCtrl.text);
-    if (gymId.isEmpty) {
-      setState(() => _gymIdError = 'Gym ID is required');
+    final gymInput = _gymIdCtrl.text.trim();
+    if (gymInput.isEmpty) {
+      setState(() => _gymIdError = 'Gym code is required');
       return;
     }
     setState(() => _loading = true);
     final pinStr = _pin.join();
-    final ok = await AdminService.verifyAdminPin(gymId, pinStr);
+    final resolvedGymId = await AdminService.resolveGymId(gymInput);
+    final ok = resolvedGymId != null &&
+        await AdminService.verifyAdminPin(resolvedGymId, pinStr);
     if (!mounted) return;
     setState(() => _loading = false);
-    if (ok) {
+    if (ok && resolvedGymId != null) {
       await AuthPrefs.save(
         memberId: 'admin',
         memberName: 'Admin',
-        gymId: gymId,
+        gymId: resolvedGymId,
         isAdmin: true,
       );
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => AdminDashboardScreen(gymId: gymId)),
+        MaterialPageRoute(
+          builder: (_) => AdminDashboardScreen(gymId: resolvedGymId),
+        ),
       );
     } else {
       setState(() {
@@ -123,11 +127,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Gym ID Input
+              // Gym Code Input
               TextFormField(
                 controller: _gymIdCtrl,
                 decoration: InputDecoration(
-                  labelText: 'Gym ID',
+                  labelText: 'Gym Code',
                   hintText: 'Fitness Factor',
                   labelStyle: TextStyle(color: _muted),
                   prefixIcon: const Icon(Icons.fitness_center, color: _blue),
@@ -161,7 +165,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 ),
                 style: const TextStyle(color: _ink, fontSize: 15),
                 validator: (v) =>
-                    v!.trim().isEmpty ? 'Gym ID is required' : null,
+                    v!.trim().isEmpty ? 'Gym code is required' : null,
               ),
               const SizedBox(height: 16),
 

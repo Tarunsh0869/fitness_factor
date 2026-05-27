@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({super.key, required this.onJoin});
+  const WelcomeScreen({super.key, required this.onJoin, required this.onSkip});
 
   final VoidCallback onJoin;
+  final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +13,23 @@ class WelcomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: onSkip,
+                  child: const Text(
+                    'Skip',
+                    style: TextStyle(
+                      color: Color(0xFF035C4A),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),

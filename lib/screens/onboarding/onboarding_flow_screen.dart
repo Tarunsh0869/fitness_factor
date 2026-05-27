@@ -48,11 +48,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
 
   void _refresh() => setState(() {});
 
-  Future<void> _continue() async {
-    if (_model.step < OnboardingModel.totalSteps - 1) {
-      _model.nextStep();
-      return;
-    }
+  Future<void> _finishOnboarding() async {
     await widget.onComplete?.call();
     if (!mounted) return;
     Navigator.pushReplacement(
@@ -61,10 +57,22 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     );
   }
 
+  Future<void> _continue() async {
+    if (_model.step < OnboardingModel.totalSteps - 1) {
+      _model.nextStep();
+      return;
+    }
+    await _finishOnboarding();
+  }
+
+  Future<void> _skip() async {
+    await _finishOnboarding();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_model.step == 0) {
-      return WelcomeScreen(onJoin: _continue);
+      return WelcomeScreen(onJoin: _continue, onSkip: _skip);
     }
 
     return Scaffold(
@@ -89,7 +97,19 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                       child: OnboardingProgressBar(progress: _model.progress),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  SizedBox(
+                    width: 64,
+                    child: TextButton(
+                      onPressed: _skip,
+                      child: const Text(
+                        'Skip',
+                        style: TextStyle(
+                          color: Color(0xFF035C4A),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

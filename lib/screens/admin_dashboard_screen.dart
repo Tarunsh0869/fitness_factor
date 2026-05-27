@@ -8,6 +8,7 @@ import '../services/auth_prefs.dart';
 import 'login_screen.dart';
 import 'admin_members_screen.dart';
 import 'admin_attendance_screen.dart';
+import 'admin_gym_registration_screen.dart';
 import 'admin_gym_settings_screen.dart';
 import 'admin_feedback_screen.dart';
 import 'admin_verification_screen.dart';
@@ -807,6 +808,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           MaterialPageRoute(
             builder: (_) => AdminGymSettingsScreen(gymId: widget.gymId),
           ),
+        ),
+      ),
+      _DashboardAction(
+        icon: Icons.add_business_outlined,
+        label: 'Add Gym',
+        color: _green,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminGymRegistrationScreen()),
         ),
       ),
       _DashboardAction(

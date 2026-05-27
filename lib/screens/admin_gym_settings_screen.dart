@@ -26,6 +26,7 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
 
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
+  final _codeCtrl = TextEditingController();
   final _latCtrl = TextEditingController();
   final _lngCtrl = TextEditingController();
   final _radiusCtrl = TextEditingController();
@@ -52,6 +53,7 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _codeCtrl.dispose();
     _latCtrl.dispose();
     _lngCtrl.dispose();
     _radiusCtrl.dispose();
@@ -64,6 +66,11 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
     final gym = await AttendanceService.getGym(widget.gymId);
     if (gym != null && mounted) {
       _nameCtrl.text = gym['name'] ?? '';
+      _codeCtrl.text =
+          gym['gymCode'] ??
+          (widget.gymId == AdminService.defaultGymId
+              ? AdminService.defaultGymCode
+              : '');
       _latCtrl.text = '${gym['latitude'] ?? ''}';
       _lngCtrl.text = '${gym['longitude'] ?? ''}';
       _radiusCtrl.text = '${gym['radiusMeters'] ?? 50}';
@@ -82,6 +89,7 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
     final ok = await AdminService.updateGymSettings(
       gymId: widget.gymId,
       name: _nameCtrl.text.trim(),
+      gymCode: _codeCtrl.text.trim(),
       latitude: double.parse(_latCtrl.text.trim()),
       longitude: double.parse(_lngCtrl.text.trim()),
       radiusMeters: int.parse(_radiusCtrl.text.trim()),
@@ -251,6 +259,18 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                       icon: Icons.store_outlined,
                       validator: (v) =>
                           v!.trim().isEmpty ? 'Name is required' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    _field(
+                      controller: _codeCtrl,
+                      label: 'Gym Code',
+                      icon: Icons.qr_code_2_outlined,
+                      validator: (v) {
+                        final code = AdminService.normalizeGymCode(v ?? '');
+                        if (code.isEmpty) return 'Gym code is required';
+                        if (code.length < 3) return 'Use at least 3 characters';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 24),
 

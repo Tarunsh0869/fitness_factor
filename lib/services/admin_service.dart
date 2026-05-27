@@ -6,6 +6,7 @@ class AdminService {
   static final _db = FirebaseFirestore.instance;
   static FirebaseFirestore get db => _db;
   static const defaultGymId = BasicGymConfig.gymId;
+  static const defaultGymCode = BasicGymConfig.gymCode;
 
   // â”€â”€ Member name cache (avoids N+1 reads) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   static final Map<String, String> _nameCache = {};
@@ -33,9 +34,89 @@ class AdminService {
         : trimmed;
   }
 
+  static Future<String?> resolveGymId(String gymIdOrCode) async {
+    final trimmed = gymIdOrCode.trim();
+    if (trimmed.isEmpty) return null;
+
+    if (trimmed.toLowerCase() == BasicGymConfig.gymId ||
+        normalizeGymCode(trimmed) == normalizeGymCode(BasicGymConfig.gymCode)) {
+      await ensureDefaultGym();
+      return BasicGymConfig.gymId;
+    }
+
+    try {
+      final direct = await _db.collection('gyms').doc(trimmed).get();
+      if (direct.exists) return direct.id;
+
+      final normalizedCode = normalizeGymCode(trimmed);
+      final byCode = await _db
+          .collection('gyms')
+          .where('gymCodeNormalized', isEqualTo: normalizedCode)
+          .limit(1)
+          .get();
+      if (byCode.docs.isNotEmpty) return byCode.docs.first.id;
+
+      final legacyByCode = await _db
+          .collection('gyms')
+          .where('gymCode', isEqualTo: normalizedCode)
+          .limit(1)
+          .get();
+      if (legacyByCode.docs.isNotEmpty) return legacyByCode.docs.first.id;
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String normalizeGymCode(String code) {
+    final normalized = code.trim().toUpperCase().replaceAll(
+      RegExp(r'[^A-Z0-9]+'),
+      '-',
+    );
+    return normalized.replaceAll(RegExp(r'^-+|-+$'), '');
+  }
+
+  static String suggestGymCode(String name) {
+    final words = name
+        .trim()
+        .split(RegExp(r'[^A-Za-z0-9]+'))
+        .where((word) => word.isNotEmpty)
+        .toList();
+    if (words.isEmpty) return '';
+    if (words.length == 1) return normalizeGymCode(words.first);
+    final acronym = normalizeGymCode(words.map((word) => word[0]).join());
+    if (acronym.length >= 3) return acronym;
+    return normalizeGymCode(words.join());
+  }
+
+  static Future<bool> gymCodeExists(String code, {String? exceptGymId}) async {
+    final normalized = normalizeGymCode(code);
+    if (normalized.isEmpty) return false;
+    try {
+      final snap = await _db
+          .collection('gyms')
+          .where('gymCodeNormalized', isEqualTo: normalized)
+          .limit(1)
+          .get();
+      if (snap.docs.isNotEmpty) return snap.docs.first.id != exceptGymId;
+
+      final legacySnap = await _db
+          .collection('gyms')
+          .where('gymCode', isEqualTo: normalized)
+          .limit(1)
+          .get();
+      if (legacySnap.docs.isEmpty) return false;
+      return legacySnap.docs.first.id != exceptGymId;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<void> ensureDefaultGym() async {
     await _db.collection('gyms').doc(BasicGymConfig.gymId).set({
       'name': BasicGymConfig.name,
+      'gymCode': BasicGymConfig.gymCode,
+      'gymCodeNormalized': normalizeGymCode(BasicGymConfig.gymCode),
       'latitude': BasicGymConfig.latitude,
       'longitude': BasicGymConfig.longitude,
       'radiusMeters': BasicGymConfig.radiusMeters,
@@ -45,12 +126,10 @@ class AdminService {
 
   static Future<bool> verifyAdminPin(String gymId, String pin) async {
     try {
-      final normalizedGymId = normalizeGymId(gymId);
-      if (normalizedGymId == BasicGymConfig.gymId) {
-        await ensureDefaultGym();
-      }
+      final resolvedGymId = await resolveGymId(gymId);
+      if (resolvedGymId == null) return false;
 
-      final doc = await _db.collection('gyms').doc(normalizedGymId).get();
+      final doc = await _db.collection('gyms').doc(resolvedGymId).get();
       if (!doc.exists) return false;
       final data = doc.data() ?? {};
       final adminPins = List<String>.from(data['adminPins'] ?? []);
@@ -123,11 +202,18 @@ class AdminService {
     required double latitude,
     required double longitude,
     required int radiusMeters,
+    required String gymCode,
     List<String>? adminPins,
   }) async {
     try {
+      final normalizedCode = normalizeGymCode(gymCode);
+      if (normalizedCode.isEmpty) return false;
+      if (await gymCodeExists(normalizedCode, exceptGymId: gymId)) return false;
+
       final data = <String, dynamic>{
         'name': name,
+        'gymCode': normalizedCode,
+        'gymCodeNormalized': normalizedCode,
         'latitude': latitude,
         'longitude': longitude,
         'radiusMeters': radiusMeters,

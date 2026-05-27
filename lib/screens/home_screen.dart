@@ -581,16 +581,20 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(width: 10),
-        const Text(
-          'Fitness Factor',
-          style: TextStyle(
-            color: _ink,
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.2,
+        const Expanded(
+          child: Text(
+            'Fitness Factor',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: _ink,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              height: 1,
+            ),
           ),
         ),
-        const Spacer(),
+        const SizedBox(width: 10),
         GestureDetector(
           onTap: _openSettings,
           child: Container(

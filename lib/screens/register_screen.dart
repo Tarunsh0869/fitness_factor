@@ -43,6 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmPassCtrl = TextEditingController();
+  final _gymCodeCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _emergencyCtrl = TextEditingController();
   final _aadhaarCtrl = TextEditingController();
@@ -75,6 +76,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmPassCtrl.dispose();
+    _gymCodeCtrl.dispose();
     _phoneCtrl.dispose();
     _emergencyCtrl.dispose();
     _aadhaarCtrl.dispose();
@@ -193,6 +195,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _error = null;
     });
 
+    final gym = await AttendanceService.findGymByCode(_gymCodeCtrl.text);
+    if (!mounted) return;
+    if (gym == null) {
+      setState(() {
+        _loading = false;
+        _error = 'Invalid gym code. Ask your Fitness Factor admin for the code.';
+      });
+      return;
+    }
+    final gymId = gym['id'] as String;
+
     final result = await AttendanceService.register(
       email: _emailCtrl.text.trim(),
       password: _usingGoogleAccount ? null : _passwordCtrl.text,
@@ -203,7 +216,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       membershipType: _membershipType,
       gender: _gender,
       dateOfBirth: _dob!,
-      gymId: BasicGymConfig.gymId,
+      gymId: gymId,
       aadhaarNumber: _aadhaarCtrl.text.replaceAll(' ', ''),
       aadhaarName: _aadhaarNameCtrl.text.trim(),
     );
@@ -315,25 +328,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             children: [
                               const FitnessFactorLogo(size: 72),
                               const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Fitness Factor',
-                                    style: TextStyle(
-                                      color: _ink,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Fitness Factor',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: _ink,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w900,
+                                        height: 1,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    'New Member Registration',
-                                    style: TextStyle(
-                                      color: _muted,
-                                      fontSize: 12,
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'New Member Registration',
+                                      style: TextStyle(
+                                        color: _muted,
+                                        fontSize: 12,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -449,6 +468,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                           ],
+                          const SizedBox(height: 24),
+
+                          _sectionLabel('Gym Access'),
+                          const SizedBox(height: 12),
+                          _field(
+                            controller: _gymCodeCtrl,
+                            label: 'Gym Code',
+                            hint: 'e.g. ${BasicGymConfig.gymCode}',
+                            icon: Icons.qr_code_2_outlined,
+                            textCapitalization: TextCapitalization.characters,
+                            validator: (v) {
+                              final code = AttendanceService.normalizeGymCode(
+                                v ?? '',
+                              );
+                              if (code.isEmpty) return 'Gym code is required';
+                              if (code.length < 3) {
+                                return 'Enter a valid gym code';
+                              }
+                              return null;
+                            },
+                          ),
                           const SizedBox(height: 24),
 
                           _sectionLabel('Personal Information'),
@@ -897,6 +937,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required String hint,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
+    TextCapitalization textCapitalization = TextCapitalization.none,
     bool obscureText = false,
     Widget? suffixIcon,
     String? Function(String?)? validator,
@@ -909,6 +950,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          textCapitalization: textCapitalization,
           obscureText: obscureText,
           style: const TextStyle(color: _ink, fontSize: 15),
           validator: validator,

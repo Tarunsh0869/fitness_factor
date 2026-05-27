@@ -26,6 +26,7 @@ class _AdminGymRegistrationScreenState
 
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
+  final _codeCtrl = TextEditingController();
   final _pinCtrl = TextEditingController();
   final _confirmPinCtrl = TextEditingController();
   final _latCtrl = TextEditingController();
@@ -36,10 +37,12 @@ class _AdminGymRegistrationScreenState
   String? _error;
   String? _success;
   bool _locationFetching = false;
+  bool _codeEdited = false;
 
   @override
   void initState() {
     super.initState();
+    _nameCtrl.addListener(_syncSuggestedGymCode);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _fetchLocation();
     });
@@ -47,12 +50,24 @@ class _AdminGymRegistrationScreenState
 
   @override
   void dispose() {
+    _nameCtrl.removeListener(_syncSuggestedGymCode);
     _nameCtrl.dispose();
+    _codeCtrl.dispose();
     _pinCtrl.dispose();
     _confirmPinCtrl.dispose();
     _latCtrl.dispose();
     _lngCtrl.dispose();
     super.dispose();
+  }
+
+  void _syncSuggestedGymCode() {
+    if (_codeEdited) return;
+    final suggestion = AdminService.suggestGymCode(_nameCtrl.text);
+    if (suggestion.isEmpty) return;
+    _codeCtrl.value = TextEditingValue(
+      text: suggestion,
+      selection: TextSelection.collapsed(offset: suggestion.length),
+    );
   }
 
   Future<void> _fetchLocation() async {
@@ -98,7 +113,16 @@ class _AdminGymRegistrationScreenState
     if (!_formKey.currentState!.validate()) return;
 
     final name = _nameCtrl.text.trim();
+    final code = AdminService.normalizeGymCode(_codeCtrl.text);
     final pin = _pinCtrl.text.trim();
+    if (code.length < 3) {
+      setState(() => _error = 'Gym code must be at least 3 characters.');
+      return;
+    }
+    if (await AdminService.gymCodeExists(code)) {
+      setState(() => _error = 'This gym code already exists.');
+      return;
+    }
     if (pin.length != 4 || int.tryParse(pin) == null) {
       setState(() => _error = 'PIN must be exactly 4 digits.');
       return;
@@ -119,6 +143,8 @@ class _AdminGymRegistrationScreenState
       // Create a new gym document with auto-generated ID
       final docRef = await AdminService.db.collection('gyms').add({
         'name': name,
+        'gymCode': code,
+        'gymCodeNormalized': code,
         'latitude': lat,
         'longitude': lng,
         'radiusMeters': 50,
@@ -180,6 +206,19 @@ class _AdminGymRegistrationScreenState
                       icon: Icons.store_outlined,
                       validator: (v) =>
                           v!.trim().isEmpty ? 'Name is required' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    _textField(
+                      controller: _codeCtrl,
+                      label: 'Gym Code',
+                      icon: Icons.qr_code_2_outlined,
+                      onChanged: (_) => _codeEdited = true,
+                      validator: (v) {
+                        final code = AdminService.normalizeGymCode(v ?? '');
+                        if (code.isEmpty) return 'Code is required';
+                        if (code.length < 3) return 'Use at least 3 characters';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 24),
 
@@ -479,12 +518,14 @@ class _AdminGymRegistrationScreenState
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    ValueChanged<String>? onChanged,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       style: const TextStyle(color: _ink, fontSize: 15),
       validator: validator,
+      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: _muted),

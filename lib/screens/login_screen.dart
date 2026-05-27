@@ -156,33 +156,40 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const SizedBox(height: 64),
                   Center(
-                    child: GestureDetector(
-                      onLongPress: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AdminLoginScreen(),
-                        ),
-                      ),
-                      child: const FitnessFactorLogo(size: 128),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                 
-                  const SizedBox(height: 6),
-                  RichText(
-                    text: TextSpan(
-                      style: const TextStyle(fontSize: 15, height: 1.6),
+                    child: Column(
                       children: [
-                        const TextSpan(
-                          text: 'Welcome back to Fitness Factor',
-                          style: TextStyle(
-                            color: _blue,
-                            fontWeight: FontWeight.w600,
+                        const FitnessFactorLogo(size: 132),
+                        const SizedBox(height: 20),
+                        GestureDetector(
+                          onLongPress: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AdminLoginScreen(),
+                            ),
+                          ),
+                          child: const SizedBox(
+                            width: double.infinity,
+                            child: Text(
+                              'Fitness Factor',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _ink,
+                                fontSize: 40,
+                                fontWeight: FontWeight.w900,
+                                height: 1,
+                              ),
+                            ),
                           ),
                         ),
-                        TextSpan(
-                          text: '.\nUse email/password or Google to continue.',
-                          style: TextStyle(color: _muted),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Welcome back. Use email/password or Google to continue.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _muted,
+                            fontSize: 15,
+                            height: 1.45,
+                          ),
                         ),
                       ],
                     ),
