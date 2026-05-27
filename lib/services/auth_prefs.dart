@@ -6,28 +6,51 @@ class AuthPrefs {
   static const _kMemberName = 'memberName';
   static const _kGymId = 'gymId';
   static const _kIsAdmin = 'isAdmin';
+  static const _kRole = 'role';
   static const _kJwtToken = 'jwtToken';
   static const _kApiMemberId = 'apiMemberId';
   static const _kApiGymId = 'apiGymId';
   static const _kJwtExpiresAt = 'jwtExpiresAt';
   static const _kOnboardingCompleted = 'onboardingCompleted';
+  static const roleMember = 'member';
+  static const roleGymMaster = 'gym_master';
+  static const roleSuperAdmin = 'super_admin';
+
+  static bool isPrivilegedRole(String? role) =>
+      role == roleGymMaster || role == roleSuperAdmin;
+
+  static String _normalizeRole(String? role, {required String fallback}) {
+    switch (role) {
+      case roleMember:
+      case roleGymMaster:
+      case roleSuperAdmin:
+        return role!;
+      default:
+        return fallback;
+    }
+  }
 
   static Future<void> save({
     required String memberId,
     required String memberName,
     required String gymId,
     bool isAdmin = false,
+    String? role,
     String? jwtToken,
     int? apiMemberId,
     int? apiGymId,
     DateTime? jwtExpiresAt,
   }) async {
     try {
+      final fallbackRole = isAdmin ? roleGymMaster : roleMember;
+      final effectiveRole = _normalizeRole(role, fallback: fallbackRole);
+      final effectiveIsAdmin = isPrivilegedRole(effectiveRole);
       final p = await SharedPreferences.getInstance();
       await p.setString(_kMemberId, memberId);
       await p.setString(_kMemberName, memberName);
       await p.setString(_kGymId, gymId);
-      await p.setBool(_kIsAdmin, isAdmin);
+      await p.setBool(_kIsAdmin, effectiveIsAdmin);
+      await p.setString(_kRole, effectiveRole);
       if (jwtToken != null && apiMemberId != null && apiGymId != null) {
         await p.setString(_kJwtToken, jwtToken);
         await p.setInt(_kApiMemberId, apiMemberId);
@@ -56,11 +79,16 @@ class AuthPrefs {
       final gym = p.getString(_kGymId);
       final jwtExpiresAtRaw = p.getString(_kJwtExpiresAt);
       if (id == null || name == null || gym == null) return null;
+      final storedIsAdmin = p.getBool(_kIsAdmin) ?? false;
+      final fallbackRole = storedIsAdmin ? roleGymMaster : roleMember;
+      final role = _normalizeRole(p.getString(_kRole), fallback: fallbackRole);
+      final effectiveIsAdmin = isPrivilegedRole(role);
       return {
         'memberId': id,
         'memberName': name,
         'gymId': gym,
-        'isAdmin': p.getBool(_kIsAdmin) ?? false,
+        'isAdmin': effectiveIsAdmin,
+        'role': role,
         'jwtToken': p.getString(_kJwtToken),
         'apiMemberId': p.getInt(_kApiMemberId),
         'apiGymId': p.getInt(_kApiGymId),
@@ -81,6 +109,7 @@ class AuthPrefs {
       await p.remove(_kMemberName);
       await p.remove(_kGymId);
       await p.remove(_kIsAdmin);
+      await p.remove(_kRole);
       await p.remove(_kJwtToken);
       await p.remove(_kApiMemberId);
       await p.remove(_kApiGymId);

@@ -8,7 +8,6 @@ import '../services/auth_prefs.dart';
 import 'onboarding/onboarding_flow_screen.dart';
 import 'admin_members_screen.dart';
 import 'admin_attendance_screen.dart';
-import 'admin_gym_registration_screen.dart';
 import 'admin_gym_settings_screen.dart';
 import 'admin_feedback_screen.dart';
 import 'admin_verification_screen.dart';
@@ -16,7 +15,13 @@ import 'admin_attendee_stats_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final String gymId;
-  const AdminDashboardScreen({super.key, required this.gymId});
+  final String role;
+
+  const AdminDashboardScreen({
+    super.key,
+    required this.gymId,
+    this.role = AuthPrefs.roleGymMaster,
+  });
 
   @override
   State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
@@ -337,6 +342,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _buildAppBar() {
+    final roleTitle = widget.role == AuthPrefs.roleSuperAdmin
+        ? 'Super Admin Dashboard'
+        : 'Gym Master Dashboard';
     final alerts =
         (_stats['pendingVerify'] as int) + (_stats['openFeedback'] as int);
     return SliverAppBar(
@@ -361,7 +369,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ],
             ),
             child: const Icon(
-              Icons.admin_panel_settings_outlined,
+              Icons.shield_outlined,
               color: Colors.white,
               size: 18,
             ),
@@ -372,8 +380,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Admin Dashboard',
+                Text(
+                  roleTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -874,15 +882,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           MaterialPageRoute(
             builder: (_) => AdminGymSettingsScreen(gymId: widget.gymId),
           ),
-        ),
-      ),
-      _DashboardAction(
-        icon: Icons.add_business_outlined,
-        label: 'Add Gym',
-        color: _green,
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AdminGymRegistrationScreen()),
         ),
       ),
       _DashboardAction(

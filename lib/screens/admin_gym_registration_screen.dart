@@ -81,7 +81,8 @@ class _AdminGymRegistrationScreenState
       if (!granted) {
         if (mounted) {
           setState(
-            () => _error = 'Location permission is needed to auto-fill coordinates.',
+            () => _error =
+                'Location permission is needed to auto-fill coordinates.',
           );
         }
         return;
@@ -148,6 +149,8 @@ class _AdminGymRegistrationScreenState
         'latitude': lat,
         'longitude': lng,
         'radiusMeters': 50,
+        'gymMasterPin': pin,
+        'adminPin': pin,
         'adminPins': [pin],
       });
 
@@ -155,10 +158,11 @@ class _AdminGymRegistrationScreenState
 
       // Save admin session
       await AuthPrefs.save(
-        memberId: 'admin',
-        memberName: 'Admin',
+        memberId: 'gym_master',
+        memberName: 'Gym Master',
         gymId: gymId,
         isAdmin: true,
+        role: AuthPrefs.roleGymMaster,
       );
 
       if (!mounted) return;
@@ -222,7 +226,7 @@ class _AdminGymRegistrationScreenState
                     ),
                     const SizedBox(height: 24),
 
-                    _sectionLabel('Admin PIN'),
+                    _sectionLabel('Gym Master PIN'),
                     const SizedBox(height: 4),
                     TextFormField(
                       controller: _pinCtrl,

@@ -128,6 +128,14 @@ class _AuthGate extends StatelessWidget {
 class _AutoLoginGate extends StatelessWidget {
   const _AutoLoginGate();
 
+  String _roleOf(Map<String, dynamic> saved) {
+    final role = saved['role'] as String?;
+    if (role != null && role.isNotEmpty) return role;
+    return saved['isAdmin'] == true
+        ? AuthPrefs.roleGymMaster
+        : AuthPrefs.roleMember;
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>?>(
@@ -143,7 +151,8 @@ class _AutoLoginGate extends StatelessWidget {
         }
         final saved = snap.data;
         if (saved != null) {
-          if (saved['isAdmin'] == true) {
+          final role = _roleOf(saved);
+          if (AuthPrefs.isPrivilegedRole(role)) {
             return _BiometricSessionGate(saved: saved);
           }
           if (FirebaseAuth.instance.currentUser == null) {
@@ -172,6 +181,14 @@ class _BiometricSessionGate extends StatefulWidget {
 class _BiometricSessionGateState extends State<_BiometricSessionGate> {
   late final Future<bool> _unlockFuture;
 
+  String _roleOf(Map<String, dynamic> saved) {
+    final role = saved['role'] as String?;
+    if (role != null && role.isNotEmpty) return role;
+    return saved['isAdmin'] == true
+        ? AuthPrefs.roleGymMaster
+        : AuthPrefs.roleMember;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -197,9 +214,13 @@ class _BiometricSessionGateState extends State<_BiometricSessionGate> {
         }
 
         final saved = widget.saved;
+        final role = _roleOf(saved);
         FirebaseService.setMemberId(saved['memberId'] as String);
-        if (saved['isAdmin'] == true) {
-          return AdminDashboardScreen(gymId: saved['gymId'] as String);
+        if (AuthPrefs.isPrivilegedRole(role)) {
+          return AdminDashboardScreen(
+            gymId: saved['gymId'] as String,
+            role: role,
+          );
         }
         return _MemberProfileGate(saved: saved);
       },

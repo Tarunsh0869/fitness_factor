@@ -138,8 +138,27 @@ class AdminService {
       'latitude': BasicGymConfig.latitude,
       'longitude': BasicGymConfig.longitude,
       'radiusMeters': BasicGymConfig.radiusMeters,
+      'gymMasterPin': BasicGymConfig.adminPin,
+      'adminPin': BasicGymConfig.adminPin,
       'adminPins': FieldValue.arrayUnion([BasicGymConfig.adminPin]),
     }, SetOptions(merge: true));
+  }
+
+  static String? _resolveGymMasterPinFromData(Map<String, dynamic> data) {
+    final gymMasterPin = data['gymMasterPin'] as String?;
+    if (gymMasterPin != null && gymMasterPin.trim().isNotEmpty) {
+      return gymMasterPin.trim();
+    }
+
+    final adminPins = List<String>.from(data['adminPins'] ?? []);
+    if (adminPins.isNotEmpty) return adminPins.first;
+
+    final legacyAdminPin = data['adminPin'] as String?;
+    if (legacyAdminPin != null && legacyAdminPin.trim().isNotEmpty) {
+      return legacyAdminPin.trim();
+    }
+
+    return null;
   }
 
   static Future<bool> verifyAdminPin(String gymId, String pin) async {
@@ -152,7 +171,10 @@ class AdminService {
       final data = doc.data() ?? {};
       final adminPins = List<String>.from(data['adminPins'] ?? []);
       final legacyAdminPin = data['adminPin'] as String?;
-      return adminPins.contains(pin) || legacyAdminPin == pin;
+      final gymMasterPin = _resolveGymMasterPinFromData(data);
+      return adminPins.contains(pin) ||
+          legacyAdminPin == pin ||
+          gymMasterPin == pin;
     } catch (_) {
       return false;
     }
@@ -162,9 +184,41 @@ class AdminService {
     try {
       final doc = await _db.collection('gyms').doc(gymId).get();
       if (!doc.exists) return [];
-      return List<String>.from(doc.data()?['adminPins'] ?? []);
+      final data = doc.data() ?? {};
+      final adminPins = List<String>.from(data['adminPins'] ?? []);
+      if (adminPins.isNotEmpty) return adminPins;
+      final gymMasterPin = _resolveGymMasterPinFromData(data);
+      if (gymMasterPin == null) return [];
+      return [gymMasterPin];
     } catch (_) {
       return [];
+    }
+  }
+
+  static Future<String?> getGymMasterPin(String gymId) async {
+    try {
+      final doc = await _db.collection('gyms').doc(gymId).get();
+      if (!doc.exists) return null;
+      final data = doc.data() ?? {};
+      return _resolveGymMasterPinFromData(data);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<bool> setGymMasterPin(String gymId, String pin) async {
+    final cleanPin = pin.trim();
+    if (cleanPin.length != 4 || int.tryParse(cleanPin) == null) return false;
+
+    try {
+      await _db.collection('gyms').doc(gymId).update({
+        'gymMasterPin': cleanPin,
+        'adminPin': cleanPin,
+        'adminPins': [cleanPin],
+      });
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -237,7 +291,16 @@ class AdminService {
         'radiusMeters': radiusMeters,
       };
       if (adminPins != null) {
-        data['adminPins'] = adminPins;
+        final sanitizedPins = adminPins
+            .map((p) => p.trim())
+            .where((p) => p.length == 4 && int.tryParse(p) != null)
+            .toList();
+        if (sanitizedPins.isNotEmpty) {
+          final primaryPin = sanitizedPins.first;
+          data['adminPins'] = [primaryPin];
+          data['gymMasterPin'] = primaryPin;
+          data['adminPin'] = primaryPin;
+        }
       }
       await _db.collection('gyms').doc(gymId).update(data);
       return true;

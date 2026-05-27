@@ -35,11 +35,11 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
   bool _saving = false;
   bool _locationFetching = false;
 
-  // Admin PINs management
-  List<String> _adminPins = [];
+  // Gym master PIN management
+  final _currentPinCtrl = TextEditingController();
   final _newPinCtrl = TextEditingController();
   final _confirmNewPinCtrl = TextEditingController();
-  bool _addingPin = false;
+  bool _updatingPin = false;
   bool _pinObscured = true;
   String? _pinError;
   String? _pinSuccess;
@@ -57,6 +57,7 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
     _latCtrl.dispose();
     _lngCtrl.dispose();
     _radiusCtrl.dispose();
+    _currentPinCtrl.dispose();
     _newPinCtrl.dispose();
     _confirmNewPinCtrl.dispose();
     super.dispose();
@@ -74,7 +75,6 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
       _latCtrl.text = '${gym['latitude'] ?? ''}';
       _lngCtrl.text = '${gym['longitude'] ?? ''}';
       _radiusCtrl.text = '${gym['radiusMeters'] ?? 50}';
-      _adminPins = List<String>.from(gym['adminPins'] ?? []);
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -93,7 +93,6 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
       latitude: double.parse(_latCtrl.text.trim()),
       longitude: double.parse(_lngCtrl.text.trim()),
       radiusMeters: int.parse(_radiusCtrl.text.trim()),
-      adminPins: _adminPins,
     );
 
     if (mounted) {
@@ -122,7 +121,9 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
       if (!granted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Location permission is needed to fetch coordinates.'),
+            content: Text(
+              'Location permission is needed to fetch coordinates.',
+            ),
           ),
         );
         return;
@@ -149,82 +150,80 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
     }
   }
 
-  Future<void> _addAdminPin() async {
-    final pin = _newPinCtrl.text.trim();
-    final confirm = _confirmNewPinCtrl.text.trim();
+  Future<void> _updateGymMasterPin() async {
+    final currentPin = _currentPinCtrl.text.trim();
+    final newPin = _newPinCtrl.text.trim();
+    final confirmPin = _confirmNewPinCtrl.text.trim();
 
-    if (pin.isEmpty || confirm.isEmpty) {
+    if (currentPin.isEmpty || newPin.isEmpty || confirmPin.isEmpty) {
       setState(() {
-        _pinError = 'Please enter PIN in both fields.';
+        _pinError = 'Please fill all PIN fields.';
         _pinSuccess = null;
       });
       return;
     }
-    if (pin.length != 4 || int.tryParse(pin) == null) {
+    if (currentPin.length != 4 ||
+        newPin.length != 4 ||
+        confirmPin.length != 4 ||
+        int.tryParse(currentPin) == null ||
+        int.tryParse(newPin) == null ||
+        int.tryParse(confirmPin) == null) {
       setState(() {
-        _pinError = 'PIN must be exactly 4 digits.';
+        _pinError = 'All PIN values must be exactly 4 digits.';
         _pinSuccess = null;
       });
       return;
     }
-    if (pin != confirm) {
+    if (newPin != confirmPin) {
       setState(() {
-        _pinError = 'PINs do not match.';
+        _pinError = 'New PIN and confirm PIN do not match.';
         _pinSuccess = null;
       });
       return;
     }
-    if (_adminPins.contains(pin)) {
+    if (newPin == currentPin) {
       setState(() {
-        _pinError = 'This PIN already exists.';
+        _pinError = 'New PIN must be different from current PIN.';
         _pinSuccess = null;
       });
       return;
     }
 
     setState(() {
-      _addingPin = true;
+      _updatingPin = true;
       _pinError = null;
       _pinSuccess = null;
     });
-    final ok = await AdminService.addAdminPin(widget.gymId, pin);
-    if (mounted) {
-      setState(() {
-        _addingPin = false;
-        if (ok) {
-          _adminPins.add(pin);
-          _newPinCtrl.clear();
-          _confirmNewPinCtrl.clear();
-          _pinError = null;
-          _pinSuccess = 'PIN added successfully.';
-        } else {
-          _pinError = 'Failed to add PIN. Please try again.';
-          _pinSuccess = null;
-        }
-      });
-    }
-  }
 
-  Future<void> _removeAdminPin(String pin) async {
-    if (_adminPins.length <= 1) {
-      setState(() {
-        _pinError = 'At least one admin PIN is required.';
-        _pinSuccess = null;
-      });
+    final currentValid = await AdminService.verifyAdminPin(
+      widget.gymId,
+      currentPin,
+    );
+    if (!currentValid) {
+      if (mounted) {
+        setState(() {
+          _updatingPin = false;
+          _pinError = 'Current PIN is incorrect.';
+          _pinSuccess = null;
+        });
+      }
       return;
     }
 
-    final ok = await AdminService.removeAdminPin(widget.gymId, pin);
-    if (mounted && ok) {
+    final ok = await AdminService.setGymMasterPin(widget.gymId, newPin);
+    if (mounted) {
       setState(() {
-        _adminPins.removeWhere((p) => p == pin);
-        _pinError = null;
-        _pinSuccess = 'PIN removed successfully.';
-      });
-    } else if (mounted) {
-      setState(() {
-        _pinError = 'Failed to remove PIN. Please try again.';
-        _pinSuccess = null;
+        _updatingPin = false;
+        if (ok) {
+          _currentPinCtrl.clear();
+          _newPinCtrl.clear();
+          _confirmNewPinCtrl.clear();
+          _pinError = null;
+          _pinSuccess = 'Gym Master PIN updated successfully.';
+        } else {
+          _pinError = 'Failed to update PIN. Please try again.';
+          _pinSuccess = null;
+        }
       });
     }
   }
@@ -387,11 +386,65 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    _sectionLabel('Admin PINs'),
+                    _sectionLabel('Gym Master PIN'),
                     const SizedBox(height: 4),
                     Text(
-                      'Manage administrator PINs. Each admin can use a unique PIN to access the gym.',
+                      'One Gym Master PIN is allowed for this gym. Update it when required.',
                       style: TextStyle(color: _muted, fontSize: 12),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _currentPinCtrl,
+                      keyboardType: TextInputType.number,
+                      obscureText: _pinObscured,
+                      maxLength: 4,
+                      style: const TextStyle(
+                        color: _ink,
+                        fontSize: 20,
+                        letterSpacing: 8,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Current PIN',
+                        labelStyle: TextStyle(color: _muted),
+                        prefixIcon: const Icon(
+                          Icons.lock_outline,
+                          color: _blue,
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _pinObscured
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            color: _muted,
+                            size: 20,
+                          ),
+                          onPressed: () =>
+                              setState(() => _pinObscured = !_pinObscured),
+                        ),
+                        filled: true,
+                        fillColor: _card,
+                        counterText: '',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(color: _outline),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(color: _outline),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(
+                            color: _blue,
+                            width: 1.5,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 15,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -495,8 +548,8 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                       width: double.infinity,
                       height: 48,
                       child: OutlinedButton.icon(
-                        onPressed: _addingPin ? null : _addAdminPin,
-                        icon: _addingPin
+                        onPressed: _updatingPin ? null : _updateGymMasterPin,
+                        icon: _updatingPin
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
@@ -504,32 +557,14 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Icon(Icons.add_moderator_outlined),
+                            : const Icon(Icons.key_outlined),
                         label: Text(
-                          _addingPin ? 'Adding PIN...' : 'Add Admin PIN',
+                          _updatingPin
+                              ? 'Updating PIN...'
+                              : 'Update Gym Master PIN',
                         ),
                       ),
                     ),
-                    if (_adminPins.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _adminPins.map((pin) {
-                          return InputChip(
-                            label: Text('PIN $pin'),
-                            labelStyle: const TextStyle(
-                              color: _ink,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            backgroundColor: _blue.withOpacity(0.08),
-                            deleteIconColor: _red,
-                            onDeleted: () => _removeAdminPin(pin),
-                            side: BorderSide(color: _blue.withOpacity(0.2)),
-                          );
-                        }).toList(),
-                      ),
-                    ],
 
                     if (_pinError != null) ...[
                       const SizedBox(height: 16),

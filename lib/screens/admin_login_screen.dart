@@ -62,10 +62,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     setState(() => _loading = false);
     if (gymId != null) {
       await AuthPrefs.save(
-        memberId: 'admin',
-        memberName: 'Admin',
+        memberId: 'gym_master',
+        memberName: 'Gym Master',
         gymId: gymId,
         isAdmin: true,
+        role: AuthPrefs.roleGymMaster,
       );
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -97,7 +98,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         foregroundColor: _ink,
         elevation: 0,
         title: const Text(
-          'Admin Access',
+          'Gym Master Access',
           style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
         ),
       ),
@@ -172,7 +173,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               const SizedBox(height: 16),
 
               const Text(
-                'Enter Admin PIN',
+                'Enter Gym Master PIN',
                 style: TextStyle(
                   color: _ink,
                   fontSize: 22,
