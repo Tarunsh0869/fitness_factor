@@ -271,7 +271,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 12),
               _field(
                 controller: _heightCtrl,
-                label: 'Height (cm)',
+                label: 'Height (cm / m / ft)',
                 icon: Icons.height_outlined,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,

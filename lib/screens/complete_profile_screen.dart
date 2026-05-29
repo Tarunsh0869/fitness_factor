@@ -366,8 +366,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         const SizedBox(height: 12),
         _MetricField(
           controller: _heightCtrl,
-          label: 'Height (cm)',
-          hint: 'e.g. 172',
+          label: 'Height (cm / m / ft)',
+          hint: 'e.g. 172 or 1.72 or 5.8',
         ),
       ],
     );

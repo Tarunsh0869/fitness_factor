@@ -142,10 +142,6 @@ class AttendanceService {
         'verificationStatus': 'pending',
         'authUid': user.uid,
         'authProvider': authProvider,
-        'aadhaarNumber': '',
-        'aadhaarLast4': '',
-        'aadhaarMasked': '',
-        'aadhaarName': '',
         'goal': '',
         'activityLevel': '',
         'experienceLevel': '',
@@ -218,13 +214,15 @@ class AttendanceService {
     List<String> preferences = const [],
   }) async {
     try {
+      final safeWeightKg = _normalizeWeightKg(weightKg);
+      final safeHeightCm = _normalizeHeightCm(heightCm);
       await _db.collection('members').doc(memberId).update({
         'goal': goal.trim(),
         'activityLevel': activityLevel.trim(),
         'experienceLevel': (experienceLevel ?? '').trim(),
         'bodyMetrics': <String, dynamic>{
-          'weightKg': weightKg,
-          'heightCm': heightCm,
+          'weightKg': safeWeightKg,
+          'heightCm': safeHeightCm,
         },
         'preferences': <String, dynamic>{'tags': preferences},
         'profileCompleted': true,
@@ -782,6 +780,8 @@ class AttendanceService {
     bool overwritePreferences = false,
   }) async {
     try {
+      final safeWeightKg = _normalizeWeightKg(weightKg);
+      final safeHeightCm = _normalizeHeightCm(heightCm);
       final update = <String, dynamic>{
         'name': name,
         'emergencyContact': emergencyContact,
@@ -795,8 +795,8 @@ class AttendanceService {
       }
       if (overwriteBodyMetrics) {
         update['bodyMetrics'] = <String, dynamic>{
-          'weightKg': weightKg,
-          'heightCm': heightCm,
+          'weightKg': safeWeightKg,
+          'heightCm': safeHeightCm,
         };
       }
       if (overwritePreferences) {
@@ -823,6 +823,30 @@ class AttendanceService {
     } catch (_) {
       return false;
     }
+  }
+
+  static double? _normalizeWeightKg(double? rawWeight) {
+    if (rawWeight == null || rawWeight <= 0) return null;
+    return double.parse(rawWeight.toStringAsFixed(1));
+  }
+
+  static double? _normalizeHeightCm(double? rawHeight) {
+    if (rawHeight == null || rawHeight <= 0) return null;
+
+    double valueCm;
+    if (rawHeight >= 0.8 && rawHeight <= 2.8) {
+      // Input in meters (e.g. 1.72)
+      valueCm = rawHeight * 100;
+    } else if (rawHeight >= 3 && rawHeight <= 8.5) {
+      // Input in feet (e.g. 5.8)
+      valueCm = rawHeight * 30.48;
+    } else {
+      // Assume centimeters (e.g. 172)
+      valueCm = rawHeight;
+    }
+
+    if (valueCm < 80 || valueCm > 260) return null;
+    return double.parse(valueCm.toStringAsFixed(1));
   }
 
   static DateTime _toDateTime(dynamic value, {required DateTime fallback}) {
