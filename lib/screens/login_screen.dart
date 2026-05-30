@@ -7,10 +7,10 @@ import '../services/auth_prefs.dart';
 import '../services/guest_session_service.dart';
 import '../widgets/fitness_factor_logo.dart';
 import 'complete_profile_screen.dart';
-import 'guest_experience_screen.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 import 'admin_login_screen.dart';
+import 'onboarding/guest_onboarding_flow_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final bool launchedFromGuest;
@@ -382,7 +382,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: () => Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const GuestExperienceScreen(),
+                            builder: (_) => const GuestOnboardingFlowScreen(),
                           ),
                         ),
                         child: const Text(

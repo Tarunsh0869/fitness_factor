@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../guest_experience_screen.dart';
 import '../login_screen.dart';
+import 'guest_onboarding_flow_screen.dart';
 
 class OnboardingFlowScreen extends StatefulWidget {
   final Future<void> Function()? onComplete;
@@ -25,6 +25,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   static const _muted = Color(0xFF535E62);
   static const _accent = Color(0xFF035C4A);
   static const _accentDark = Color(0xFF02473A);
+  static const _ghostSkip = Color(0xFFE7E5DF);
 
   final PageController _controller = PageController();
   int _index = 0;
@@ -52,7 +53,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const GuestExperienceScreen()),
+      MaterialPageRoute(builder: (_) => const GuestOnboardingFlowScreen()),
     );
   }
 
@@ -73,6 +74,14 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     );
   }
 
+  void _back() {
+    if (_index <= 0) return;
+    _controller.previousPage(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLast = _index == _slides.length - 1;
@@ -83,21 +92,6 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
           child: Column(
             children: [
-              Row(
-                children: [
-                  const Spacer(),
-                  TextButton(
-                    onPressed: _completeAndOpenSignIn,
-                    child: const Text(
-                      'Skip',
-                      style: TextStyle(
-                        color: _accent,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
               Expanded(
                 child: PageView.builder(
                   controller: _controller,
@@ -167,6 +161,38 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                 ),
               ),
               const SizedBox(height: 18),
+              if (!isLast) ...[
+                Row(
+                  children: [
+                    if (_index > 0)
+                      TextButton.icon(
+                        onPressed: _back,
+                        icon: const Icon(Icons.arrow_back_ios_new, size: 14),
+                        label: const Text('Back'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: _muted,
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: _completeAndOpenSignIn,
+                      style: TextButton.styleFrom(
+                        foregroundColor: _ghostSkip,
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                      ),
+                      child: const Text('Skip'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
               if (!isLast)
                 SizedBox(
                   width: double.infinity,

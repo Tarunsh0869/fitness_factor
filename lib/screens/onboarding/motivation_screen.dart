@@ -28,7 +28,7 @@ class _ProgressMotivation extends StatelessWidget {
       children: [
         const SizedBox(height: 24),
         const Text(
-          'Understand your progress',
+          'Track progress that matters',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 26,
@@ -38,7 +38,7 @@ class _ProgressMotivation extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         const Text(
-          'When you log your training, you get a clear view of your progress and what you can improve.',
+          'Every workout you log helps you see what’s improving and what needs focus.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 17, height: 1.4, color: Color(0xFF535E62)),
         ),
@@ -155,16 +155,6 @@ class _RightPlaceMotivation extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        const Text(
-          'Lyfta has logged over 20 million sets',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF035C4A),
-          ),
-        ),
-        const SizedBox(height: 12),
         const Text(
           'It\'s all about helping you stay consistent, set personal records, and see real progress.',
           textAlign: TextAlign.center,
