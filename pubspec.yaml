@@ -68,6 +68,7 @@ flutter:
   assets:
     - assets/logo/
     - assets/onboarding/
+    - assets/onboarding/focus/
     - assets/onboarding/welcome/
     - assets/onboarding/motivation/
     - assets/onboarding/gender/

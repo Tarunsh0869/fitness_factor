@@ -14,6 +14,12 @@ class SelectableChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final onSurface = theme.colorScheme.onSurface;
+    final outline = theme.dividerColor;
+    final card = theme.cardColor;
+
     return InkWell(
       borderRadius: BorderRadius.circular(28),
       onTap: onTap,
@@ -21,17 +27,14 @@ class SelectableChip extends StatelessWidget {
         duration: const Duration(milliseconds: 170),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF3F2ED),
+          color: card,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: selected ? const Color(0xFF035C4A) : const Color(0xFFC3C8C6),
-            width: 1.5,
-          ),
+          border: Border.all(color: selected ? primary : outline, width: 1.5),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? const Color(0xFF035C4A) : const Color(0xFF2A323E),
+            color: selected ? primary : onSurface,
             fontWeight: FontWeight.w500,
             fontSize: 16,
           ),
