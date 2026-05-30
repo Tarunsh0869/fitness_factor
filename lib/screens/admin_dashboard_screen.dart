@@ -88,7 +88,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     setState(() {
       _headerTime = DateFormat('hh:mm:ss a').format(now);
       _headerDate = DateFormat(
-        'EEE, MMM d ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· yyyy',
+        'EEE, MMM d, yyyy',
       ).format(now);
     });
   }
@@ -180,7 +180,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              '$pendingV pending ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· $openFeed open feedback',
+              '$pendingV pending | $openFeed open feedback',
               style: const TextStyle(color: _muted, fontSize: 13),
             ),
             const SizedBox(height: 20),
@@ -503,7 +503,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ),
                     ),
                     child: Text(
-                      '$pending member${pending > 1 ? 's' : ''} pending verification  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢',
+                      '$pending member${pending > 1 ? 's' : ''} pending verification',
                       style: const TextStyle(
                         color: _amber,
                         fontSize: 13,
@@ -521,7 +521,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ),
                     ),
                     child: Text(
-                      '$feedback open feedback item${feedback > 1 ? 's' : ''}  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢',
+                      '$feedback open feedback item${feedback > 1 ? 's' : ''}',
                       style: const TextStyle(
                         color: _amber,
                         fontSize: 13,
@@ -1104,8 +1104,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 ),
                 Text(
-                  'IN ${DateFormat('hh:mm a').format(checkedIn)} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· $elapsedStr'
-                  '${workout.isNotEmpty ? ' ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· $workout' : ''}',
+                  'IN ${DateFormat('hh:mm a').format(checkedIn)} | $elapsedStr'
+                  '${workout.isNotEmpty ? ' | $workout' : ''}',
                   style: TextStyle(color: _muted, fontSize: 11),
                 ),
               ],

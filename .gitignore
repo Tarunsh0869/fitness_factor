@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local/dev-only files
+UI_ENHANCEMENTS_SUMMARY.md
+lib/screens/_lint_report.txt
+lib/screens/ui_enhancements_demo.dart
+lib/screens/seed_screen.dart
+fitness_factor_api/run_error.txt
+fitness_factor_api/appsettings.json

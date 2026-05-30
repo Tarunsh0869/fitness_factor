@@ -2,4 +2,6 @@ bin/
 obj/
 *.user
 run_output.txt
+run_error.txt
 firebase-service-account.json
+appsettings.json

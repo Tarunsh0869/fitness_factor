@@ -533,14 +533,28 @@ class _HomeScreenState extends State<HomeScreen> {
     return Icons.fitness_center_rounded;
   }
 
-  void _handleNavTap(int index) {
-    setState(() => _selectedTab = index);
+  Future<void> _handleNavTap(int index) async {
+    if (index == 0) {
+      if (_selectedTab != 0) {
+        setState(() => _selectedTab = 0);
+      }
+      return;
+    }
+
     if (index == 1) {
-      _syncArrivalByLocation();
-    } else if (index == 2) {
-      _openStats();
+      setState(() => _selectedTab = 1);
+      await _syncArrivalByLocation();
+      return;
+    }
+
+    if (index == 2) {
+      await _openStats();
     } else if (index == 3) {
-      _openSettings();
+      await _openSettings();
+    }
+
+    if (mounted) {
+      setState(() => _selectedTab = 0);
     }
   }
 
