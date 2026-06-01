@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -23,23 +23,30 @@ class _StatsScreenState extends State<StatsScreen> {
   static const _muted = Color(0xFF535E62);
 
   Map<String, dynamic>? _stats;
-  bool _loading = true;
+  StreamSubscription? _statsSub;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _statsSub = AttendanceService.statsStream(widget.memberId).listen((s) {
+      if (mounted) setState(() => _stats = s);
+    });
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
-    final s = await AttendanceService.getStats(widget.memberId);
-    if (mounted) {
-      setState(() {
-        _stats = s;
-        _loading = false;
-      });
-    }
+    _statsSub?.cancel();
+    final completer = Completer<void>();
+    _statsSub = AttendanceService.statsStream(widget.memberId).listen((s) {
+      if (mounted) setState(() => _stats = s);
+      if (!completer.isCompleted) completer.complete();
+    });
+    return completer.future;
+  }
+
+  @override
+  void dispose() {
+    _statsSub?.cancel();
+    super.dispose();
   }
 
   @override
@@ -54,14 +61,8 @@ class _StatsScreenState extends State<StatsScreen> {
           'My Stats',
           style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh_outlined, color: _muted),
-            onPressed: _load,
-          ),
-        ],
       ),
-      body: _loading
+      body: _stats == null
           ? const Center(child: CircularProgressIndicator(color: _blue))
           : RefreshIndicator(
               onRefresh: _load,
@@ -277,7 +278,7 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
           const SizedBox(height: 20),
           SizedBox(
-            height: 100,
+            height: 110,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(7, (i) {
@@ -292,12 +293,15 @@ class _StatsScreenState extends State<StatsScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         if (val > 0)
-                          Text(
-                            '$val',
-                            style: TextStyle(
-                              color: isToday ? _blue : _muted,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              '$val',
+                              style: TextStyle(
+                                color: isToday ? _blue : _muted,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         const SizedBox(height: 3),
@@ -311,11 +315,14 @@ class _StatsScreenState extends State<StatsScreen> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          days[i],
-                          style: TextStyle(
-                            color: isToday ? _ink : _muted,
-                            fontSize: 9,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            days[i],
+                            style: TextStyle(
+                              color: isToday ? _ink : _muted,
+                              fontSize: 9,
+                            ),
                           ),
                         ),
                       ],
@@ -385,7 +392,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
   Widget _timeStat(String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.06),
         borderRadius: BorderRadius.circular(12),
@@ -393,19 +400,25 @@ class _StatsScreenState extends State<StatsScreen> {
       ),
       child: Column(
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: _muted, fontSize: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: _muted, fontSize: 10),
+            ),
           ),
         ],
       ),

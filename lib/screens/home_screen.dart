@@ -61,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription? _fcmSub;
   StreamSubscription? _sessionSub;
   StreamSubscription? _historySub;
+  StreamSubscription? _statsSub;
   Duration _elapsed = Duration.zero;
   String _memberPhone = '';
   String _gymName = '';
@@ -101,7 +102,12 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _history = records);
     });
 
-    await Future.wait([_loadMember(), _loadStats(), _loadGymName()]);
+    _statsSub = AttendanceService.statsStream(widget.memberId).listen((stats) {
+      if (!mounted) return;
+      setState(() => _weekVisits = stats['weekVisits'] as int);
+    });
+
+    await Future.wait([_loadMember(), _loadGymName()]);
     _listenFcm();
   }
 
@@ -110,14 +116,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted || member == null) return;
     setState(() {
       _memberPhone = member['phone'] ?? '';
-    });
-  }
-
-  Future<void> _loadStats() async {
-    final stats = await AttendanceService.getStats(widget.memberId);
-    if (!mounted) return;
-    setState(() {
-      _weekVisits = stats['weekVisits'] as int;
     });
   }
 
@@ -390,7 +388,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onRefresh() =>
-      Future.wait([_loadMember(), _loadStats(), _loadGymName()]);
+      Future.wait([_loadMember(), _loadGymName()]);
 
   Future<void> _logout() async {
     await AttendanceService.logout();
@@ -1250,6 +1248,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _autoCheckoutTimer?.cancel();
     _sessionSub?.cancel();
     _historySub?.cancel();
+    _statsSub?.cancel();
     super.dispose();
   }
 }

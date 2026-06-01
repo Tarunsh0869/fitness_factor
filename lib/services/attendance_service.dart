@@ -898,6 +898,117 @@ class AttendanceService {
 
   // ── Stats ─────────────────────────────────────────────────────────────────────
 
+  static Stream<Map<String, dynamic>> statsStream(String memberId) {
+    final now = DateTime.now();
+    final lookbackStart = DateTime(now.year, now.month, now.day)
+        .subtract(const Duration(days: 60));
+    return _db
+        .collection('attendance')
+        .where('memberId', isEqualTo: memberId)
+        .where(
+          'checkedIn',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(lookbackStart),
+        )
+        .orderBy('checkedIn', descending: false)
+        .snapshots()
+        .map((snap) => _computeStats(snap.docs));
+  }
+
+  static Map<String, dynamic> _computeStats(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final weekStart = now.subtract(const Duration(days: 7));
+    final monthStart = DateTime(now.year, now.month, 1);
+    final last30Start = now.subtract(const Duration(days: 30));
+
+    final records = docs.map((d) {
+      final data = d.data();
+      final checkedIn = _toDateTime(data['checkedIn'], fallback: now);
+      return AttendanceRecord(
+        id: d.id,
+        checkedIn: checkedIn,
+        checkedOut: data['checkedOut'] == null
+            ? null
+            : _toDateTime(data['checkedOut'], fallback: checkedIn),
+        source: data['source'] ?? 'auto',
+        workoutType: data['workoutType'] ?? '',
+        notes: data['notes'] ?? '',
+      );
+    }).toList();
+
+    final monthRecords =
+        records.where((r) => !r.checkedIn.isBefore(monthStart)).toList();
+    final weekRecords =
+        records.where((r) => !r.checkedIn.isBefore(weekStart)).toList();
+    final last30Records =
+        records.where((r) => !r.checkedIn.isBefore(last30Start)).toList();
+    final closedAll = monthRecords.where((r) => !r.isOpen).toList();
+    final closedWeek = weekRecords.where((r) => !r.isOpen).toList();
+    final openSessions = monthRecords.where((r) => r.isOpen).length;
+
+    final totalMinutes = closedAll.fold<int>(
+      0,
+      (s, r) => s + _safeDurationMinutes(r.checkedIn, r.checkedOut!),
+    );
+    final weekMinutes = closedWeek.fold<int>(
+      0,
+      (s, r) => s + _safeDurationMinutes(r.checkedIn, r.checkedOut!),
+    );
+    final missedCheckoutRate =
+        monthRecords.isEmpty ? 0.0 : openSessions / monthRecords.length;
+
+    final typeCount = <String, int>{};
+    for (final r in closedAll) {
+      if (r.workoutType != null && r.workoutType!.isNotEmpty) {
+        typeCount[r.workoutType!] = (typeCount[r.workoutType!] ?? 0) + 1;
+      }
+    }
+    final topType = typeCount.isEmpty
+        ? '-'
+        : typeCount.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+
+    final dailyVisits = List<int>.filled(7, 0);
+    for (final r in weekRecords) {
+      final day = DateTime(r.checkedIn.year, r.checkedIn.month, r.checkedIn.day);
+      final daysAgo = today.difference(day).inDays;
+      if (daysAgo >= 0 && daysAgo < 7) dailyVisits[6 - daysAgo]++;
+    }
+
+    int streak = 0;
+    for (int i = 0; i <= 60; i++) {
+      final day = today.subtract(Duration(days: i));
+      final hasVisit = records.any((r) {
+        final d = r.checkedIn;
+        return d.year == day.year && d.month == day.month && d.day == day.day;
+      });
+      if (hasVisit) streak++; else break;
+    }
+
+    final hourCounts = List<int>.filled(24, 0);
+    for (final r in monthRecords) hourCounts[r.checkedIn.hour]++;
+    final maxHour = hourCounts.reduce((a, b) => a > b ? a : b);
+    final peakHour = maxHour == 0 ? -1 : hourCounts.indexOf(maxHour);
+
+    return {
+      'monthVisits': monthRecords.length,
+      'weekVisits': weekRecords.length,
+      'visitsLast7': weekRecords.length,
+      'visitsLast30': last30Records.length,
+      'totalMinutes': totalMinutes,
+      'weekMinutes': weekMinutes,
+      'avgMinutes': closedAll.isEmpty ? 0 : totalMinutes ~/ closedAll.length,
+      'openSessions': openSessions,
+      'missedCheckoutRate': missedCheckoutRate,
+      'peakHour': peakHour,
+      'streak': streak,
+      'topWorkout': topType,
+      'dailyVisits': dailyVisits,
+      'typeCount': typeCount,
+    };
+  }
+
   static Future<Map<String, dynamic>> getStats(String memberId) async {
     try {
       final now = DateTime.now();
