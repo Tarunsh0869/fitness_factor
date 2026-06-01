@@ -8,6 +8,8 @@
 	<string>Fitness Factor needs your location to detect when you are at the gym.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Fitness Factor needs background location to auto-detect gym entry and exit.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Fitness Factor uses Face ID to securely unlock your session.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
@@ -68,8 +70,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>

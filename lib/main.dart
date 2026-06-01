@@ -15,6 +15,7 @@ import 'theme/app_theme.dart';
 import 'screens/complete_profile_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/pending_verification_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/admin_gym_registration_screen.dart';
 import 'screens/onboarding/onboarding_flow_screen.dart';
@@ -238,12 +239,13 @@ class _MemberProfileGate extends StatelessWidget {
 
   const _MemberProfileGate({required this.saved});
 
+  Future<Map<String, dynamic>?> _loadMember() =>
+      AttendanceService.getMember(saved['memberId'] as String);
+
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: AttendanceService.needsProfileCompletion(
-        saved['memberId'] as String,
-      ),
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _loadMember(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -254,7 +256,20 @@ class _MemberProfileGate extends StatelessWidget {
           );
         }
 
-        if (snap.data == true) {
+        final member = snap.data;
+        final verificationStatus =
+            member?['verificationStatus'] as String? ?? 'pending';
+
+        if (verificationStatus == 'pending' ||
+            verificationStatus == 'rejected') {
+          return PendingVerificationScreen(
+            memberName: saved['memberName'] as String,
+            verificationStatus: verificationStatus,
+          );
+        }
+
+        if (snap.data != null &&
+            !(member?['profileCompleted'] as bool? ?? false)) {
           return CompleteProfileScreen(
             memberId: saved['memberId'] as String,
             memberName: saved['memberName'] as String,

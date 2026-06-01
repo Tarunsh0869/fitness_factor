@@ -8,6 +8,7 @@ import '../services/guest_session_service.dart';
 import '../widgets/fitness_factor_logo.dart';
 import 'complete_profile_screen.dart';
 import 'home_screen.dart';
+import 'pending_verification_screen.dart';
 import 'register_screen.dart';
 import 'admin_login_screen.dart';
 import 'onboarding/guest_onboarding_flow_screen.dart';
@@ -109,6 +110,21 @@ class _LoginScreenState extends State<LoginScreen> {
     );
     if (!mounted) return;
     final profileCompleted = result['profileCompleted'] == true;
+    final verificationStatus = result['verificationStatus'] as String? ?? 'pending';
+
+    if (verificationStatus == 'pending' || verificationStatus == 'rejected') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PendingVerificationScreen(
+            memberName: memberName,
+            verificationStatus: verificationStatus,
+          ),
+        ),
+      );
+      return;
+    }
+
     if (!profileCompleted) {
       Navigator.pushReplacement(
         context,

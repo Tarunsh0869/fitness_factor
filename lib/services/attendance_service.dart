@@ -191,6 +191,7 @@ class AttendanceService {
     if (!doc.exists) return null;
     final data = doc.data() ?? {};
     final profileCompleted = _isProfileCompleteData(data);
+    final verificationStatus = data['verificationStatus'] as String? ?? 'pending';
     return {
       'memberId': doc.id,
       'name': data['name'] as String? ?? user.displayName ?? 'Member',
@@ -198,6 +199,7 @@ class AttendanceService {
       'email': data['email'] as String? ?? user.email ?? '',
       'phone': data['phone'] as String? ?? '',
       'profileCompleted': profileCompleted,
+      'verificationStatus': verificationStatus,
     };
   }
 
@@ -351,6 +353,18 @@ class AttendanceService {
   }
 
   // ── Member ───────────────────────────────────────────────────────────────────
+
+  // Reload the current Firebase user's member doc (used by PendingVerificationScreen)
+  static Future<Map<String, dynamic>?> reloadCurrentUser() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return null;
+      await user.reload();
+      return _memberResultForUser(_auth.currentUser);
+    } catch (_) {
+      return null;
+    }
+  }
 
   static Future<Map<String, dynamic>?> getMember(String memberId) async {
     try {
