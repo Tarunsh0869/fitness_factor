@@ -1,5 +1,5 @@
 name: fitness_factor
-description: "A new Flutter project."
+description: "Fitness Factor — gym attendance and progress tracking app."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -42,6 +42,7 @@ dependencies:
   shared_preferences: ^2.3.0
   local_auth: ^3.0.1
   google_sign_in: ^7.2.0
+  firebase_crashlytics: ^4.0.0
 
 dev_dependencies:
   flutter_test:

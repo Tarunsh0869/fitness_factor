@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -35,6 +36,10 @@ void main() async {
     }
     FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
     await FirebaseService.init();
+
+    // ── Crash reporting ───────────────────────────────────────────────────────
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
   } catch (e) {
     debugPrint('[Firebase] Init failed: $e');
   }

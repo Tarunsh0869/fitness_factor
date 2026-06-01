@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/guest_session_service.dart';
@@ -21,6 +23,10 @@ class _GuestExperienceScreenState extends State<GuestExperienceScreen> {
 
   int _starterWorkouts = 0;
   int _meaningfulActions = 0;
+  int _gymTimeMinutes = 0;
+  bool _timeTrackingActive = false;
+  DateTime? _sessionStart;
+  Timer? _timeTrackingTimer;
   bool _loadingWorkout = false;
   bool _signInPromptShown = false;
 
@@ -30,14 +36,29 @@ class _GuestExperienceScreenState extends State<GuestExperienceScreen> {
     _initGuestSession();
   }
 
+  @override
+  void dispose() {
+    _timeTrackingTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _initGuestSession() async {
     await GuestSessionService.startSession();
     final data = await GuestSessionService.load();
     if (!mounted) return;
+    final startMillis = data['timeSessionStart'] as int?;
     setState(() {
       _starterWorkouts = data['starterWorkoutsCompleted'] as int;
       _meaningfulActions = data['meaningfulActionCount'] as int;
+      _gymTimeMinutes = data['gymTimeMinutes'] as int;
+      _timeTrackingActive = data['sessionActive'] as bool;
+      _sessionStart = startMillis != null
+          ? DateTime.fromMillisecondsSinceEpoch(startMillis)
+          : null;
     });
+    if (_timeTrackingActive) {
+      _startLiveTimer();
+    }
   }
 
   Future<void> _startStarterWorkout() async {
@@ -54,11 +75,83 @@ class _GuestExperienceScreenState extends State<GuestExperienceScreen> {
       _loadingWorkout = false;
       _starterWorkouts = data['starterWorkoutsCompleted'] as int;
       _meaningfulActions = data['meaningfulActionCount'] as int;
+      _gymTimeMinutes = data['gymTimeMinutes'] as int;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Starter workout completed. Great start!')),
     );
     await _maybeShowSignInPrompt();
+  }
+
+  Future<void> _toggleGymTimeSession() async {
+    if (_timeTrackingActive) {
+      final totalMinutes = await GuestSessionService.stopGymTimeSession();
+      await GuestSessionService.recordMeaningfulAction('guest_time_session_recorded');
+      if (!mounted) return;
+      setState(() {
+        _timeTrackingActive = false;
+        _sessionStart = null;
+        _gymTimeMinutes = totalMinutes;
+      });
+      _timeTrackingTimer?.cancel();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gym time session recorded.')),
+      );
+      return;
+    }
+
+    await GuestSessionService.startGymTimeSession();
+    if (!mounted) return;
+    setState(() {
+      _timeTrackingActive = true;
+      _sessionStart = DateTime.now();
+    });
+    _startLiveTimer();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Gym time session started.')),
+    );
+  }
+
+  void _startLiveTimer() {
+    _timeTrackingTimer?.cancel();
+    _timeTrackingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        // Refresh elapsed display.
+      });
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    }
+    return '${minutes}m';
+  }
+
+  Widget _buildPremiumNeedRow(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle, color: _accent, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: _ink,
+                fontSize: 14,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _maybeShowSignInPrompt() async {
@@ -99,7 +192,7 @@ class _GuestExperienceScreenState extends State<GuestExperienceScreen> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Create your account to sync sessions across devices and unlock personalized plans.',
+                  'Create your account to lock your guest workouts, gym time, and progress into a permanent member profile.',
                   style: TextStyle(color: _muted, fontSize: 14, height: 1.45),
                 ),
                 const SizedBox(height: 16),
@@ -207,7 +300,7 @@ class _GuestExperienceScreenState extends State<GuestExperienceScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Start in under 60 seconds',
+                    'Your gym journey starts before signup',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 22,
@@ -216,7 +309,7 @@ class _GuestExperienceScreenState extends State<GuestExperienceScreen> {
                   ),
                   SizedBox(height: 6),
                   Text(
-                    'Try a starter workout first. No credentials needed.',
+                    'Try a starter workout first. No credentials needed. Upgrade anytime so your guest-mode gains become part of your permanent member story.',
                     style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ],
@@ -242,8 +335,8 @@ class _GuestExperienceScreenState extends State<GuestExperienceScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'Completed: $_starterWorkouts',
+                    Text(
+                      'Try a starter workout first. No credentials needed. Upgrade anytime so your guest-mode gains become part of your permanent member story.',
                     style: const TextStyle(color: _muted, fontSize: 13),
                   ),
                   const SizedBox(height: 14),
@@ -290,36 +383,125 @@ class _GuestExperienceScreenState extends State<GuestExperienceScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.lock_outline, color: _muted, size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        'Premium Preview',
-                        style: TextStyle(
-                          color: _ink,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
+                  const Text(
+                          'Why lock in Premium now',
+                    style: TextStyle(
+                      color: _ink,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                        Text(
+                          'You’ve already earned $_starterWorkouts starter workout(s), $_gymTimeMinutes minutes of gym time, and $_meaningfulActions progress actions. Upgrade now to keep it in your member profile and power smarter progress.',
+                    style: const TextStyle(color: _muted, fontSize: 13, height: 1.45),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPremiumNeedRow('Save guest workouts and gym time forever'),
+                  _buildPremiumNeedRow('Get instantly personalized plans'),
+                  _buildPremiumNeedRow('Turn every visit into smarter progress'),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () => FreemiumPaywallSheet.show(
+                        context,
+                        title: 'Premium for your progress',
+                        subtitle:
+                            'Keep the workouts and gym time you already earned, then unlock smarter plans and faster results.',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Advanced insights and unlimited plans are available in Premium.',
-                    style: TextStyle(color: _muted, fontSize: 13),
-                  ),
-                  const SizedBox(height: 10),
-                  TextButton(
-                    onPressed: () => FreemiumPaywallSheet.show(
-                      context,
-                      title: 'Unlock Premium Features',
+                      child: const Text(
+                        'Unlock Premium Now',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ),
-                    child: const Text(
-                      'See Premium Plans',
-                      style: TextStyle(
-                        color: _accent,
-                        fontWeight: FontWeight.w700,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Gym Time Recording',
+                    style: TextStyle(
+                      color: _ink,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _timeTrackingActive
+                        ? 'Your current session is being tracked.'
+                        : 'Track your gym visit time as a guest and save it when you sign in.',
+                    style: const TextStyle(color: _muted, fontSize: 13),
+                  ),
+                  const SizedBox(height: 14),
+                  if (_timeTrackingActive && _sessionStart != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Started: ${TimeOfDay.fromDateTime(_sessionStart!).format(context)}',
+                          style: const TextStyle(color: _muted, fontSize: 13),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Elapsed: ${_formatDuration(DateTime.now().difference(_sessionStart!))}',
+                          style: const TextStyle(
+                            color: _ink,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Text(
+                      'Recorded time: ${_gymTimeMinutes}m',
+                      style: const TextStyle(
+                        color: _ink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: _toggleGymTimeSession,
+                      icon: Icon(
+                        _timeTrackingActive
+                            ? Icons.stop_circle_outlined
+                            : Icons.play_circle_outlined,
+                      ),
+                      label: Text(
+                        _timeTrackingActive ? 'Stop Session' : 'Start Session',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
                   ),

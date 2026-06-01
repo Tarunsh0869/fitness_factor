@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/admin_service.dart';
+import '../services/attendance_service.dart';
 import '../services/auth_prefs.dart';
 import 'onboarding/onboarding_flow_screen.dart';
 import 'admin_members_screen.dart';
@@ -38,6 +39,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   static const _card = Color(0xFFF3F2ED);
   static const _ink = Color(0xFF2A323E);
   static const _muted = Color(0xFF535E62);
+  static const _outline = Color(0xFFC3C8C6);
   static const _subtle = Color(0xFF7A8582);
 
   Map<String, dynamic> _stats = {
@@ -56,6 +58,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   List<Map<String, dynamic>> _insideNow = [];
   List<Map<String, dynamic>> _todayFeed = [];
   List<int> _weeklyOccupancy = List.filled(7, 0);
+  String _gymName = '';
   String _headerTime = '';
   String _headerDate = '';
   Timer? _clockTimer;
@@ -64,23 +67,25 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   StreamSubscription? _todaySub;
   Timer? _statsTimer;
   bool _statsLoading = true;
+  List<Map<String, String>> _gyms = [];
+  String? _selectedGymId;
+  bool _gymListLoading = true;
+
+  String get _currentGymId => _selectedGymId ?? widget.gymId;
 
   @override
   void initState() {
     super.initState();
+    _selectedGymId = widget.gymId;
     _updateClock();
     _clockTimer = Timer.periodic(
       const Duration(seconds: 1),
       (_) => _updateClock(),
     );
+    _loadGymList();
     _loadAll();
     _statsTimer = Timer.periodic(const Duration(minutes: 2), (_) => _loadAll());
-    _insideSub = AdminService.insideNowStream(widget.gymId).listen((list) {
-      if (mounted) setState(() => _insideNow = list);
-    });
-    _todaySub = AdminService.todayAttendanceStream(widget.gymId).listen((list) {
-      if (mounted) setState(() => _todayFeed = list);
-    });
+    _subscribeToGymStreams(_currentGymId);
   }
 
   void _updateClock() {
@@ -94,17 +99,55 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Future<void> _loadAll() async {
+    final currentGymId = _currentGymId;
     final results = await Future.wait([
-      AdminService.getGymStats(widget.gymId),
-      AdminService.getWeeklyOccupancy(widget.gymId),
+      AdminService.getGymStats(currentGymId),
+      AdminService.getWeeklyOccupancy(currentGymId),
+      AttendanceService.getGym(currentGymId),
     ]);
     if (mounted) {
       setState(() {
         _stats = results[0] as Map<String, dynamic>;
         _weeklyOccupancy = results[1] as List<int>;
+        final gymData = results[2] as Map<String, dynamic>?;
+        _gymName = (gymData?['name'] as String?)?.trim() ?? '';
         _statsLoading = false;
       });
     }
+  }
+
+  Future<void> _loadGymList() async {
+    final gyms = await AttendanceService.registrationGyms();
+    if (!mounted) return;
+    setState(() {
+      _gyms = gyms;
+      _gymListLoading = false;
+      if (_selectedGymId == null ||
+          !_gyms.any((gym) => gym['id'] == _selectedGymId)) {
+        _selectedGymId = _gyms.isNotEmpty ? _gyms.first['id'] : widget.gymId;
+      }
+    });
+  }
+
+  void _subscribeToGymStreams(String gymId) {
+    _insideSub?.cancel();
+    _todaySub?.cancel();
+    _insideSub = AdminService.insideNowStream(gymId).listen((list) {
+      if (mounted) setState(() => _insideNow = list);
+    });
+    _todaySub = AdminService.todayAttendanceStream(gymId).listen((list) {
+      if (mounted) setState(() => _todayFeed = list);
+    });
+  }
+
+  Future<void> _changeSelectedGym(String? gymId) async {
+    if (gymId == null || gymId == _selectedGymId) return;
+    setState(() {
+      _selectedGymId = gymId;
+      _statsLoading = true;
+    });
+    _subscribeToGymStreams(gymId);
+    await _loadAll();
   }
 
   Future<void> _logout() async {
@@ -211,7 +254,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     Navigator.push(
       from,
       MaterialPageRoute(
-        builder: (_) => AdminVerificationScreen(gymId: widget.gymId),
+        builder: (_) => AdminVerificationScreen(gymId: _currentGymId),
       ),
     );
   }
@@ -221,7 +264,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     Navigator.push(
       from,
       MaterialPageRoute(
-        builder: (_) => AdminFeedbackScreen(gymId: widget.gymId),
+        builder: (_) => AdminFeedbackScreen(gymId: _currentGymId),
       ),
     );
   }
@@ -317,6 +360,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     const SizedBox(height: 8),
+                    _buildGymSelector(),
+                    const SizedBox(height: 12),
                     if (!_statsLoading) ...[
                       _buildAlertBanner(),
                       const SizedBox(height: 16),
@@ -427,7 +472,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) =>
-                            AdminVerificationScreen(gymId: widget.gymId),
+                            AdminVerificationScreen(gymId: _currentGymId),
                       ),
                     );
                   } else {
@@ -435,7 +480,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) =>
-                            AdminFeedbackScreen(gymId: widget.gymId),
+                            AdminFeedbackScreen(gymId: _currentGymId),
                       ),
                     );
                   }
@@ -499,7 +544,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) =>
-                            AdminVerificationScreen(gymId: widget.gymId),
+                            AdminVerificationScreen(gymId: _currentGymId),
                       ),
                     ),
                     child: Text(
@@ -517,7 +562,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) =>
-                            AdminFeedbackScreen(gymId: widget.gymId),
+                            AdminFeedbackScreen(gymId: _currentGymId),
                       ),
                     ),
                     child: Text(
@@ -772,7 +817,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
           const SizedBox(height: 20),
           SizedBox(
-            height: 90,
+            height: 110,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(7, (i) {
@@ -786,28 +831,39 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        if (val > 0)
+                        if (val > 0) ...[
                           Text(
                             '$val',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               color: isToday ? _blue : _muted,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                        const SizedBox(height: 3),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.easeOut,
-                          height: (frac * 64).clamp(4.0, 64.0),
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(5),
+                          const SizedBox(height: 4),
+                        ],
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 600),
+                              curve: Curves.easeOut,
+                              height: (frac * 64).clamp(4.0, 64.0),
+                              decoration: BoxDecoration(
+                                color: color,
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           days[i],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: isToday ? _ink : _muted,
                             fontSize: 9,
@@ -834,7 +890,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AdminMembersScreen(gymId: widget.gymId),
+            builder: (_) => AdminMembersScreen(gymId: _currentGymId),
           ),
         ),
       ),
@@ -845,7 +901,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AdminAttendanceScreen(gymId: widget.gymId),
+            builder: (_) => AdminAttendanceScreen(gymId: _currentGymId),
           ),
         ),
       ),
@@ -857,7 +913,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AdminVerificationScreen(gymId: widget.gymId),
+            builder: (_) => AdminVerificationScreen(gymId: _currentGymId),
           ),
         ),
       ),
@@ -869,18 +925,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AdminFeedbackScreen(gymId: widget.gymId),
+            builder: (_) => AdminFeedbackScreen(gymId: _currentGymId),
           ),
         ),
       ),
       _DashboardAction(
         icon: Icons.settings_outlined,
         label: 'Gym Setup',
+        subtitle: _gymName.isNotEmpty ? 'Manage $_gymName' : 'Manage gym settings',
         color: _blue,
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AdminGymSettingsScreen(gymId: widget.gymId),
+            builder: (_) => AdminGymSettingsScreen(gymId: _currentGymId),
           ),
         ),
       ),
@@ -891,7 +948,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AdminAttendeeStatsScreen(gymId: widget.gymId),
+            builder: (_) => AdminAttendeeStatsScreen(gymId: _currentGymId),
           ),
         ),
       ),
@@ -935,6 +992,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     String label,
     Color color,
     VoidCallback onTap, {
+    String? subtitle,
     int badge = 0,
   }) {
     return GestureDetector(
@@ -967,15 +1025,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: _ink,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _ink,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (subtitle != null && subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             if (badge > 0) ...[
@@ -1010,6 +1085,93 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildGymSelector() {
+    if (_gymListLoading) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _outline.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: const [
+            Expanded(
+              child: Text('Loading gyms…', style: TextStyle(fontSize: 14)),
+            ),
+            SizedBox(width: 16),
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_gyms.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _outline.withOpacity(0.3)),
+        ),
+        child: const Text(
+          'No gyms available to select.',
+          style: TextStyle(fontSize: 14),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _outline.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Select gym',
+            style: TextStyle(
+              color: _ink,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            value: _currentGymId,
+            decoration: InputDecoration(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: _outline.withOpacity(0.5)),
+              ),
+            ),
+            items: _gyms.map((gym) {
+              final label = gym['name']?.trim().isNotEmpty == true
+                  ? gym['name']!
+                  : gym['id']!;
+              return DropdownMenuItem<String>(
+                value: gym['id'],
+                child: Text(label),
+              );
+            }).toList(),
+            onChanged: _changeSelectedGym,
+          ),
+        ],
       ),
     );
   }
@@ -1168,7 +1330,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => AdminAttendanceScreen(gymId: widget.gymId),
+                  builder: (_) => AdminAttendanceScreen(gymId: _currentGymId),
                 ),
               ),
               child: const Text(
@@ -1344,6 +1506,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 class _DashboardAction {
   final IconData icon;
   final String label;
+  final String? subtitle;
   final Color color;
   final VoidCallback onTap;
   final int badge;
@@ -1351,6 +1514,7 @@ class _DashboardAction {
   const _DashboardAction({
     required this.icon,
     required this.label,
+    this.subtitle,
     required this.color,
     required this.onTap,
     this.badge = 0,

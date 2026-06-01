@@ -141,6 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
       starterWorkoutsCompleted: guest['starterWorkoutsCompleted'] as int,
       meaningfulActionCount: guest['meaningfulActionCount'] as int,
       lastAction: guest['lastAction'] as String,
+      gymTimeMinutes: guest['gymTimeMinutes'] as int,
     );
     await GuestSessionService.clear();
   }
@@ -218,8 +219,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          widget.launchedFromGuest
-                              ? 'Sign in to save your guest progress and unlock personalization.'
+                            widget.launchedFromGuest
+                              ? 'Sign in to keep your guest-mode workouts, gym time, attendance, and progress safe in your member profile.'
                               : 'Welcome back. Use email/password or Google to continue.',
                           textAlign: TextAlign.center,
                           style: TextStyle(

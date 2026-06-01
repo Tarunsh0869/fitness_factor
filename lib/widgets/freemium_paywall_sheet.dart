@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import '../screens/login_screen.dart';
 
 class FreemiumPaywallSheet {
   static Future<void> show(
     BuildContext context, {
-    String title = 'Go Premium',
+    String title = 'Save Your Gym Journey',
     String subtitle =
-        'Unlock unlimited plans, deeper insights, and personalized coaching.',
+      'A gym journey locker for your progress. Keep workouts, gym time, attendance, and guest-mode gains safe in your member profile.',
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -50,9 +51,9 @@ class FreemiumPaywallSheet {
                   ),
                 ),
                 const SizedBox(height: 14),
-                const _BenefitRow(text: 'Unlimited workout plans'),
-                const _BenefitRow(text: 'Advanced progress analytics'),
-                const _BenefitRow(text: 'Smart recommendations'),
+                const _BenefitRow(text: 'Lock guest workouts, gym time, and attendance into your member profile'),
+                const _BenefitRow(text: 'Save every guest-mode gain and keep it permanent'),
+                const _BenefitRow(text: "Don't lose what you already built"),
                 const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
@@ -60,9 +61,10 @@ class FreemiumPaywallSheet {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Trial flow will be connected next.'),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const LoginScreen(launchedFromGuest: true),
                         ),
                       );
                     },
@@ -74,7 +76,7 @@ class FreemiumPaywallSheet {
                       ),
                     ),
                     child: const Text(
-                      'Start 7-Day Trial',
+                      'Secure My Progress',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
@@ -120,15 +122,21 @@ class _BenefitRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.check_circle, size: 18, color: Color(0xFF035C4A)),
+          const Padding(
+            padding: EdgeInsets.only(top: 1),
+            child: Icon(Icons.check_circle, size: 18, color: Color(0xFF035C4A)),
+          ),
           const SizedBox(width: 8),
-          Text(
-            text,
-            style: const TextStyle(
-              color: Color(0xFF2A323E),
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Color(0xFF2A323E),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

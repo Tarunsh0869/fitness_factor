@@ -97,16 +97,20 @@ class _GenderBody extends StatelessWidget {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(10),
-                      child: Image.asset(
-                        assetPath,
-                        fit: BoxFit.contain,
-                        alignment: Alignment.bottomCenter,
-                        errorBuilder: (_, __, ___) => Icon(
-                          Icons.accessibility_new_rounded,
-                          size: 150,
-                          color: selected
-                              ? const Color(0xFF035C4A)
-                              : const Color(0xFFC3C8C6),
+                      child: Center(
+                        child: Image.asset(
+                          assetPath,
+                          fit: BoxFit.contain,
+                          width: double.infinity,
+                          height: double.infinity,
+                          alignment: Alignment.center,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.accessibility_new_rounded,
+                            size: 150,
+                            color: selected
+                                ? const Color(0xFF035C4A)
+                                : const Color(0xFFC3C8C6),
+                          ),
                         ),
                       ),
                     ),

@@ -127,6 +127,11 @@ class AttendanceService {
       final name = (displayName ?? user.displayName ?? fallbackName).trim();
       await user.updateDisplayName(name);
 
+      // Send email verification for password-based accounts
+      if (!useCurrentFirebaseUser && !user.emailVerified) {
+        try { await user.sendEmailVerification(); } catch (_) {}
+      }
+
       await _db.collection('members').doc(user.uid).set({
         'name': name,
         'email': user.email ?? normalizedEmail,
@@ -177,6 +182,11 @@ class AttendanceService {
 
   static Future<Map<String, dynamic>?> _memberResultForUser(User? user) async {
     if (user == null) return null;
+    // Block unverified email/password accounts
+    if (!user.emailVerified &&
+        user.providerData.any((p) => p.providerId == 'password')) {
+      return {'error': 'Please verify your email before signing in. Check your inbox for a verification link.'};
+    }
     final doc = await _db.collection('members').doc(user.uid).get();
     if (!doc.exists) return null;
     final data = doc.data() ?? {};
@@ -239,21 +249,32 @@ class AttendanceService {
     required int starterWorkoutsCompleted,
     required int meaningfulActionCount,
     required String lastAction,
+    required int gymTimeMinutes,
   }) async {
     try {
       if (starterWorkoutsCompleted <= 0 &&
           meaningfulActionCount <= 0 &&
-          lastAction.isEmpty) {
+          lastAction.isEmpty &&
+          gymTimeMinutes <= 0) {
         return;
       }
-      await _db.collection('members').doc(memberId).set({
+
+      final payload = <String, dynamic>{
         'guestSessionMerge': {
           'starterWorkoutsCompleted': starterWorkoutsCompleted,
           'meaningfulActionCount': meaningfulActionCount,
           'lastAction': lastAction,
+          'gymTimeMinutes': gymTimeMinutes,
           'mergedAt': FieldValue.serverTimestamp(),
         },
-      }, SetOptions(merge: true));
+        'guestStarterWorkoutsCompleted': starterWorkoutsCompleted,
+        'guestMeaningfulActionCount': meaningfulActionCount,
+        'guestGymTimeMinutes': gymTimeMinutes,
+        'guestLastAction': lastAction,
+        'guestProgressAppliedAt': FieldValue.serverTimestamp(),
+      };
+
+      await _db.collection('members').doc(memberId).set(payload, SetOptions(merge: true));
     } catch (_) {}
   }
 

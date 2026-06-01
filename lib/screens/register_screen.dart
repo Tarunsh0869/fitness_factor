@@ -218,6 +218,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       starterWorkoutsCompleted: guest['starterWorkoutsCompleted'] as int,
       meaningfulActionCount: guest['meaningfulActionCount'] as int,
       lastAction: guest['lastAction'] as String,
+      gymTimeMinutes: guest['gymTimeMinutes'] as int,
     );
     await GuestSessionService.clear();
   }

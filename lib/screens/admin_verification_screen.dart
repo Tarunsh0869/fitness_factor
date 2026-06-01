@@ -704,60 +704,63 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen>
                   vertical: 8,
                 ),
                 child: Container(
-                  height: 40,
                   decoration: BoxDecoration(
                     color: _card,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(color: const Color(0xFFC3C8C6)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 12),
-                      Icon(Icons.search_outlined, color: _subtle, size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: (value) {
-                            setState(() {
-                              _searchQuery = value;
-                            });
-                          },
-                          decoration: InputDecoration(
-                            hintText: 'Search by name, phone, or membership...',
-                            hintStyle: TextStyle(color: _subtle, fontSize: 13),
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                          style: TextStyle(color: _ink, fontSize: 13),
-                          cursorColor: _blue,
-                        ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                    style: const TextStyle(color: _ink, fontSize: 14),
+                    cursorColor: _blue,
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      hintText: 'Search by name, phone, or membership...',
+                      hintStyle: TextStyle(color: _muted.withOpacity(0.7), fontSize: 14),
+                      prefixIcon: const Icon(Icons.search, color: _blue, size: 20),
+                      suffixIcon: _searchQuery.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.close, size: 20, color: _muted),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                });
+                              },
+                              splashRadius: 22,
+                            ),
+                      filled: true,
+                      fillColor: _card,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide(color: const Color(0xFFC3C8C6)),
                       ),
-                      if (_searchQuery.isNotEmpty)
-                        IconButton(
-                          icon: Icon(
-                            Icons.clear_outlined,
-                            color: _subtle,
-                            size: 18,
-                          ),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {
-                              _searchQuery = '';
-                            });
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 40),
-                        ),
-                      const SizedBox(width: 8),
-                    ],
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide(color: const Color(0xFFC3C8C6)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: const BorderSide(color: _blue, width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 14,
+                      ),
+                    ),
                   ),
                 ),
               ),

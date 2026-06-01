@@ -153,6 +153,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.all(20),
               children: [
                 _buildProfileCard(),
+                const SizedBox(height: 16),
+                _buildGuestProgressCard(),
                 const SizedBox(height: 24),
                 _sectionLabel('Quick Actions'),
                 _actionTile(
@@ -281,6 +283,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icon(Icons.edit_outlined, color: _muted, size: 20),
             onPressed: _openEditProfile,
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestProgressCard() {
+    final member = _member;
+    if (member == null) return const SizedBox.shrink();
+
+    final starterWorkouts = member['guestStarterWorkoutsCompleted'] as int? ?? 0;
+    final meaningfulActions = member['guestMeaningfulActionCount'] as int? ?? 0;
+    final gymTimeMinutes = member['guestGymTimeMinutes'] as int? ?? 0;
+    final lastAction = (member['guestLastAction'] as String? ?? '').trim();
+
+    if (starterWorkouts == 0 && meaningfulActions == 0 && gymTimeMinutes == 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _blue.withOpacity(0.16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Saved Guest Progress',
+            style: TextStyle(
+              color: _blue,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text('Starter workouts saved: $starterWorkouts',
+              style: TextStyle(color: _ink, fontSize: 13)),
+          const SizedBox(height: 6),
+          Text('Gym time saved: $gymTimeMinutes minutes',
+              style: TextStyle(color: _ink, fontSize: 13)),
+          const SizedBox(height: 6),
+          Text('Progress actions saved: $meaningfulActions',
+              style: TextStyle(color: _ink, fontSize: 13)),
+          if (lastAction.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text('Last action: $lastAction',
+                style: TextStyle(color: _muted, fontSize: 12)),
+          ],
         ],
       ),
     );

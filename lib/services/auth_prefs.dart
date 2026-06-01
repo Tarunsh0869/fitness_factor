@@ -7,10 +7,6 @@ class AuthPrefs {
   static const _kGymId = 'gymId';
   static const _kIsAdmin = 'isAdmin';
   static const _kRole = 'role';
-  static const _kJwtToken = 'jwtToken';
-  static const _kApiMemberId = 'apiMemberId';
-  static const _kApiGymId = 'apiGymId';
-  static const _kJwtExpiresAt = 'jwtExpiresAt';
   static const _kOnboardingCompleted = 'onboardingCompleted';
   static const roleMember = 'member';
   static const roleGymMaster = 'gym_master';
@@ -36,10 +32,6 @@ class AuthPrefs {
     required String gymId,
     bool isAdmin = false,
     String? role,
-    String? jwtToken,
-    int? apiMemberId,
-    int? apiGymId,
-    DateTime? jwtExpiresAt,
   }) async {
     try {
       final fallbackRole = isAdmin ? roleGymMaster : roleMember;
@@ -51,21 +43,6 @@ class AuthPrefs {
       await p.setString(_kGymId, gymId);
       await p.setBool(_kIsAdmin, effectiveIsAdmin);
       await p.setString(_kRole, effectiveRole);
-      if (jwtToken != null && apiMemberId != null && apiGymId != null) {
-        await p.setString(_kJwtToken, jwtToken);
-        await p.setInt(_kApiMemberId, apiMemberId);
-        await p.setInt(_kApiGymId, apiGymId);
-        if (jwtExpiresAt != null) {
-          await p.setString(_kJwtExpiresAt, jwtExpiresAt.toIso8601String());
-        } else {
-          await p.remove(_kJwtExpiresAt);
-        }
-      } else {
-        await p.remove(_kJwtToken);
-        await p.remove(_kApiMemberId);
-        await p.remove(_kApiGymId);
-        await p.remove(_kJwtExpiresAt);
-      }
     } catch (e) {
       debugPrint('[AuthPrefs] save failed: $e');
     }
@@ -77,7 +54,6 @@ class AuthPrefs {
       final id = p.getString(_kMemberId);
       final name = p.getString(_kMemberName);
       final gym = p.getString(_kGymId);
-      final jwtExpiresAtRaw = p.getString(_kJwtExpiresAt);
       if (id == null || name == null || gym == null) return null;
       final storedIsAdmin = p.getBool(_kIsAdmin) ?? false;
       final fallbackRole = storedIsAdmin ? roleGymMaster : roleMember;
@@ -89,12 +65,6 @@ class AuthPrefs {
         'gymId': gym,
         'isAdmin': effectiveIsAdmin,
         'role': role,
-        'jwtToken': p.getString(_kJwtToken),
-        'apiMemberId': p.getInt(_kApiMemberId),
-        'apiGymId': p.getInt(_kApiGymId),
-        'jwtExpiresAt': jwtExpiresAtRaw == null
-            ? null
-            : DateTime.tryParse(jwtExpiresAtRaw),
       };
     } catch (e) {
       debugPrint('[AuthPrefs] load failed: $e');
@@ -110,10 +80,6 @@ class AuthPrefs {
       await p.remove(_kGymId);
       await p.remove(_kIsAdmin);
       await p.remove(_kRole);
-      await p.remove(_kJwtToken);
-      await p.remove(_kApiMemberId);
-      await p.remove(_kApiGymId);
-      await p.remove(_kJwtExpiresAt);
     } catch (e) {
       debugPrint('[AuthPrefs] clear failed: $e');
     }
