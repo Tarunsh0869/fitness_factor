@@ -8,7 +8,12 @@ import 'admin_member_detail_screen.dart';
 
 class AdminMembersScreen extends StatefulWidget {
   final String gymId;
-  const AdminMembersScreen({super.key, required this.gymId});
+  final bool embedded;
+  const AdminMembersScreen({
+    super.key,
+    required this.gymId,
+    this.embedded = false,
+  });
 
   @override
   State<AdminMembersScreen> createState() => _AdminMembersScreenState();
@@ -27,6 +32,7 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
   List<Map<String, dynamic>> _filtered = [];
   StreamSubscription? _sub;
   String _query = '';
+  bool _loading = true;
 
   @override
   void initState() {
@@ -36,6 +42,7 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
         setState(() {
           _all = list;
           _filtered = _applyFilter(list, _query);
+          _loading = false;
         });
       }
     });
@@ -73,7 +80,60 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      appBar: AppBar(
+      appBar: widget.embedded
+          ? AppBar(
+              backgroundColor: _bg,
+              foregroundColor: _ink,
+              elevation: 0,
+              automaticallyImplyLeading: false,
+              title: Text(
+                'Members (${_all.length})',
+                style: const TextStyle(fontWeight: FontWeight.w700, color: _ink),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.bar_chart_outlined, color: _blue),
+                  tooltip: 'Attendee Stats',
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AdminAttendeeStatsScreen(gymId: widget.gymId),
+                    ),
+                  ),
+                ),
+              ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(60),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: TextField(
+                    onChanged: _onSearch,
+                    style: const TextStyle(color: _ink),
+                    decoration: InputDecoration(
+                      hintText: 'Search by name or phone...',
+                      hintStyle: TextStyle(color: _muted.withOpacity(0.6)),
+                      prefixIcon: const Icon(Icons.search, color: _blue, size: 20),
+                      filled: true,
+                      fillColor: _card,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide(color: const Color(0xFFC3C8C6)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide(color: const Color(0xFFC3C8C6)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: const BorderSide(color: _blue, width: 1.5),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : AppBar(
         backgroundColor: _bg,
         foregroundColor: _ink,
         elevation: 0,
@@ -124,7 +184,9 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
           ),
         ),
       ),
-      body: _filtered.isEmpty
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: _blue))
+          : _filtered.isEmpty
           ? Center(
               child: Text(
                 _query.isEmpty
