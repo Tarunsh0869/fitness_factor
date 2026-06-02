@@ -13,6 +13,7 @@ import '../services/geo_service.dart';
 import '../widgets/exit_confirmation_sheet.dart';
 import '../widgets/fitness_factor_logo.dart';
 import 'onboarding/onboarding_flow_screen.dart';
+import 'rewards_screen.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
 
@@ -619,7 +620,7 @@ class _HomeViewState extends State<_HomeView> {
             ),
           ),
           StatsScreen(memberId: widget.memberId, embedded: true),
-          _RewardsPlaceholder(),
+          RewardsScreen(memberId: widget.memberId, embedded: true),
         ],
       ),
     );
@@ -1203,65 +1204,3 @@ class _HomeViewState extends State<_HomeView> {
   }
 }
 
-class _RewardsPlaceholder extends StatelessWidget {
-  static const _blue = Color(0xFF035C4A);
-  static const _bg = Color(0xFFF9F7F2);
-  static const _card = Color(0xFFF3F2ED);
-  static const _ink = Color(0xFF2A323E);
-  static const _muted = Color(0xFF535E62);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: _bg,
-        foregroundColor: _ink,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Rewards',
-          style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
-        ),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: _blue.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.emoji_events_rounded,
-                  color: _blue,
-                  size: 40,
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Rewards Coming Soon',
-                style: TextStyle(
-                  color: _ink,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Earn badges, unlock achievements, and track your fitness milestones.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: _muted, fontSize: 14, height: 1.5),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
