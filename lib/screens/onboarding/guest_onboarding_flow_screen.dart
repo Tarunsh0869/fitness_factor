@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../services/guest_session_service.dart';
+import '../../blocs/guest_onboarding/guest_onboarding_bloc.dart';
 import '../../widgets/onboarding_progress_bar.dart';
 import '../../widgets/primary_button.dart';
 import '../guest_experience_screen.dart';
@@ -15,30 +16,52 @@ import 'tracking_reason_screen.dart';
 import 'weight_screen.dart';
 import 'workout_days_screen.dart';
 
-class GuestOnboardingFlowScreen extends StatefulWidget {
+class GuestOnboardingFlowScreen extends StatelessWidget {
   const GuestOnboardingFlowScreen({super.key});
 
   @override
-  State<GuestOnboardingFlowScreen> createState() =>
-      _GuestOnboardingFlowScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => GuestOnboardingBloc(),
+      child: const _GuestOnboardingView(),
+    );
+  }
 }
 
-class _GuestOnboardingFlowScreenState extends State<GuestOnboardingFlowScreen> {
+class _GuestOnboardingView extends StatefulWidget {
+  const _GuestOnboardingView();
+
+  @override
+  State<_GuestOnboardingView> createState() => _GuestOnboardingViewState();
+}
+
+class _GuestOnboardingViewState extends State<_GuestOnboardingView> {
   static const _bg = Color(0xFFF9F7F2);
   static const _ink = Color(0xFF2A323E);
   static const _muted = Color(0xFF535E62);
   static const _ghostSkip = Color(0xFFE7E5DF);
 
   final OnboardingModel _model = OnboardingModel();
-  int _step = 0;
-  bool _navigating = false;
 
-  static const _totalSteps = 11;
+  @override
+  void initState() {
+    super.initState();
+    _model.addListener(_onModelChanged);
+  }
 
-  bool get _isLastStep => _step == _totalSteps - 1;
+  @override
+  void dispose() {
+    _model.removeListener(_onModelChanged);
+    _model.dispose();
+    super.dispose();
+  }
 
-  bool get _canContinue {
-    switch (_step) {
+  void _onModelChanged() {
+    if (mounted) setState(() {});
+  }
+
+  bool _canContinue(int step) {
+    switch (step) {
       case 0:
         return _model.gender != null;
       case 1:
@@ -58,60 +81,8 @@ class _GuestOnboardingFlowScreenState extends State<GuestOnboardingFlowScreen> {
     }
   }
 
-  bool get _isOptionalStep => _step >= 7;
-
-  @override
-  void initState() {
-    super.initState();
-    _model.addListener(_onModelChanged);
-  }
-
-  @override
-  void dispose() {
-    _model.removeListener(_onModelChanged);
-    _model.dispose();
-    super.dispose();
-  }
-
-  void _onModelChanged() {
-    if (!mounted) return;
-    setState(() {});
-  }
-
-  Future<void> _completeFlow({required bool skipped}) async {
-    if (_navigating) return;
-    setState(() => _navigating = true);
-    await GuestSessionService.recordMeaningfulAction(
-      skipped ? 'guest_onboarding_skipped' : 'guest_onboarding_completed',
-    );
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const GuestExperienceScreen()),
-    );
-  }
-
-  void _next() {
-    if (!_canContinue || _navigating) return;
-    if (_isLastStep) {
-      _completeFlow(skipped: false);
-      return;
-    }
-    setState(() => _step += 1);
-  }
-
-  void _back() {
-    if (_step == 0 || _navigating) return;
-    setState(() => _step -= 1);
-  }
-
-  void _skipStep() {
-    if (!_isOptionalStep || _isLastStep || _navigating) return;
-    setState(() => _step += 1);
-  }
-
-  Widget _buildStep() {
-    switch (_step) {
+  Widget _buildStep(int step) {
+    switch (step) {
       case 0:
         return GenderScreen(model: _model);
       case 1:
@@ -141,88 +112,113 @@ class _GuestOnboardingFlowScreenState extends State<GuestOnboardingFlowScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (_step + 1) / _totalSteps;
-    return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: _bg,
-        elevation: 0,
-        foregroundColor: _ink,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Guest Onboarding',
-          style: TextStyle(
-            color: _ink,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 8, 18, 20),
-          child: Column(
-            children: [
-              OnboardingProgressBar(progress: progress),
-              const SizedBox(height: 14),
-              Expanded(child: _buildStep()),
-              Row(
-                children: [
-                  if (_step > 0)
-                    TextButton.icon(
-                      onPressed: _navigating ? null : _back,
-                      icon: const Icon(Icons.arrow_back_ios_new, size: 14),
-                      label: const Text('Back'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: _muted,
-                        textStyle: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
+    return BlocListener<GuestOnboardingBloc, GuestOnboardingState>(
+      listener: (context, state) {
+        if (state is GuestOnboardingDone) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const GuestExperienceScreen()),
+          );
+        }
+      },
+      child: BlocBuilder<GuestOnboardingBloc, GuestOnboardingState>(
+        builder: (context, state) {
+          final bloc = context.read<GuestOnboardingBloc>();
+          final canContinue = _canContinue(state.step) && !state.navigating;
+          final progress =
+              (state.step + 1) / GuestOnboardingState.totalSteps;
+
+          return Scaffold(
+            backgroundColor: _bg,
+            appBar: AppBar(
+              backgroundColor: _bg,
+              elevation: 0,
+              foregroundColor: _ink,
+              automaticallyImplyLeading: false,
+              title: const Text(
+                'Guest Onboarding',
+                style: TextStyle(
+                  color: _ink,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 8, 18, 20),
+                child: Column(
+                  children: [
+                    OnboardingProgressBar(progress: progress),
+                    const SizedBox(height: 14),
+                    Expanded(child: _buildStep(state.step)),
+                    Row(
+                      children: [
+                        if (state.step > 0)
+                          TextButton.icon(
+                            onPressed: state.navigating
+                                ? null
+                                : () => bloc.add(GuestOnboardingBack()),
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
+                              size: 14,
+                            ),
+                            label: const Text('Back'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: _muted,
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: state.navigating
+                              ? null
+                              : () => bloc.add(
+                                    GuestOnboardingComplete(skipped: true),
+                                  ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: _ghostSkip,
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
+                          child: const Text('Skip'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (state.isOptionalStep && !state.isLastStep) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: () => bloc.add(GuestOnboardingSkipStep()),
+                          child: const Text(
+                            'Skip this step',
+                            style: TextStyle(
+                              color: _ghostSkip,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
                       ),
+                      const SizedBox(height: 10),
+                    ],
+                    PrimaryButton(
+                      label: state.isLastStep ? 'Finish' : 'Continue',
+                      enabled: canContinue,
+                      onTap: () => bloc.add(GuestOnboardingNext()),
                     ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: _navigating
-                        ? null
-                        : () => _completeFlow(skipped: true),
-                    style: TextButton.styleFrom(
-                      foregroundColor: _ghostSkip,
-                      textStyle: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
-                    ),
-                    child: const Text('Skip'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (_isOptionalStep && !_isLastStep) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: _skipStep,
-                    child: const Text(
-                      'Skip this step',
-                      style: TextStyle(
-                        color: _ghostSkip,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-              ],
-              PrimaryButton(
-                label: _isLastStep ? 'Finish' : 'Continue',
-                enabled: _canContinue && !_navigating,
-                onTap: _next,
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

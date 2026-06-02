@@ -1,19 +1,22 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../blocs/home/home_bloc.dart';
 import '../models/attendance_record.dart';
 import '../services/attendance_service.dart';
 import '../services/auth_prefs.dart';
 import '../services/firebase_service.dart';
 import '../services/geo_service.dart';
 import '../widgets/exit_confirmation_sheet.dart';
+import '../widgets/fitness_factor_logo.dart';
 import 'onboarding/onboarding_flow_screen.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   final String memberId;
   final String memberName;
   final String gymId;
@@ -26,7 +29,13 @@ class HomeScreen extends StatefulWidget {
   });
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => HomeBloc(memberId: memberId, gymId: gymId)
+        ..add(HomeInit()),
+      child: _HomeView(memberId: memberId, memberName: memberName, gymId: gymId),
+    );
+  }
 }
 
 enum _LocationAttendanceAction {
@@ -37,7 +46,22 @@ enum _LocationAttendanceAction {
   outside,
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeView extends StatefulWidget {
+  final String memberId;
+  final String memberName;
+  final String gymId;
+
+  const _HomeView({
+    required this.memberId,
+    required this.memberName,
+    required this.gymId,
+  });
+
+  @override
+  State<_HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<_HomeView> {
   static const _pageBg = Color(0xFFF9F7F2);
   static const _cardBg = Color(0xFFF3F2ED);
   static const _surfaceAlt = Color(0xFFE0E4E2);
@@ -49,25 +73,28 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _success = Color(0xFF0A8F69);
   static const _danger = Color(0xFFB3261E);
 
-  bool _isInsideGym = false;
-  bool _geoReady = false;
-  bool _checkingArrival = false;
-  bool _manualCheckInLoading = false;
-  List<AttendanceRecord> _history = [];
-  AttendanceRecord? _openSession;
-  Timer? _sessionTimer;
-  Timer? _autoCheckoutTimer;
-  StreamSubscription? _geoSub;
-  StreamSubscription? _fcmSub;
+  // All reactive state is now owned by HomeBloc.
+  // These booleans track one-shot UI that needs BuildContext (dialog).
+  bool _qrDialogOpen = false;
+
   StreamSubscription? _sessionSub;
   StreamSubscription? _historySub;
   StreamSubscription? _statsSub;
-  Duration _elapsed = Duration.zero;
-  String _memberPhone = '';
-  String _gymName = '';
+  StreamSubscription? _geoSub;
+  StreamSubscription? _fcmSub;
+  Timer? _sessionTimer;
+  Timer? _autoCheckoutTimer;
+  AttendanceRecord? _openSession;
+  List<AttendanceRecord> _history = [];
   int _weekVisits = 0;
+  Duration _elapsed = Duration.zero;
+  bool _isInsideGym = false;
+  bool _geoReady = false;
   bool _geofenceStarted = false;
-
+  bool _checkingArrival = false;
+  bool _manualCheckInLoading = false;
+  String _gymName = '';
+  String _memberPhone = '';
   int _selectedTab = 0;
 
   @override
@@ -425,58 +452,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _openQuickMenu() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: _cardBg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: _outline,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.bar_chart_rounded, color: _accent),
-                title: const Text('View Stats'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _openStats();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.settings_outlined, color: _accent),
-                title: const Text('Settings'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _openSettings();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.logout_rounded, color: _danger),
-                title: const Text('Logout'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _logout();
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   Duration? _averageDuration() {
     final closed = _history.where((r) => r.duration != null).toList();
@@ -531,29 +506,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Icons.fitness_center_rounded;
   }
 
-  Future<void> _handleNavTap(int index) async {
-    if (index == 0) {
-      if (_selectedTab != 0) {
-        setState(() => _selectedTab = 0);
-      }
-      return;
-    }
-
-    if (index == 1) {
-      setState(() => _selectedTab = 1);
-      await _syncArrivalByLocation();
-      return;
-    }
-
-    if (index == 2) {
-      await _openStats();
-    } else if (index == 3) {
-      await _openSettings();
-    }
-
-    if (mounted) {
-      setState(() => _selectedTab = 0);
-    }
+  void _handleNavTap(int index) {
+    if (_selectedTab != index) setState(() => _selectedTab = index);
   }
 
   @override
@@ -570,96 +524,103 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: _pageBg,
       bottomNavigationBar: _buildBottomNav(),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _onRefresh,
-          color: _accent,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildTopBar(),
-                const SizedBox(height: 4),
-                const Text(
-                  'Track your Fitness Factor goals.',
-                  style: TextStyle(color: _muted, fontSize: 15),
-                ),
-                const SizedBox(height: 16),
-                _buildCheckInCard(),
-                const SizedBox(height: 14),
-                _buildWeeklyProgressCard(
-                  visits: _weekVisits,
-                  goal: weeklyGoal,
-                  progress: weeklyProgress,
-                ),
-                const SizedBox(height: 12),
-                Row(
+      body: IndexedStack(
+        index: _selectedTab,
+        children: [
+          SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _onRefresh,
+              color: _accent,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _buildMetricCard(
-                        icon: Icons.watch_later_outlined,
-                        label: 'Avg. Duration',
-                        value: _formatDuration(avgDuration),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildMetricCard(
-                        icon: Icons.local_fire_department_outlined,
-                        label: 'Burned',
-                        value:
-                            '${NumberFormat.decimalPattern().format(burnedCalories)} kcal',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
+                    _buildTopBar(),
+                    const SizedBox(height: 4),
                     const Text(
-                      'Recent Sessions',
-                      style: TextStyle(
-                        color: _ink,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      'Track your Fitness Factor goals.',
+                      style: TextStyle(color: _muted, fontSize: 15),
                     ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: _openStats,
-                      child: const Text(
-                        'View All',
-                        style: TextStyle(
-                          color: _accent,
-                          fontWeight: FontWeight.w600,
+                    const SizedBox(height: 16),
+                    _buildCheckInCard(),
+                    const SizedBox(height: 14),
+                    _buildWeeklyProgressCard(
+                      visits: _weekVisits,
+                      goal: weeklyGoal,
+                      progress: weeklyProgress,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricCard(
+                            icon: Icons.watch_later_outlined,
+                            label: 'Avg. Duration',
+                            value: _formatDuration(avgDuration),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildMetricCard(
+                            icon: Icons.local_fire_department_outlined,
+                            label: 'Burned',
+                            value:
+                                '${NumberFormat.decimalPattern().format(burnedCalories)} kcal',
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        const Text(
+                          'Recent Sessions',
+                          style: TextStyle(
+                            color: _ink,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () => setState(() => _selectedTab = 1),
+                          child: const Text(
+                            'View All',
+                            style: TextStyle(
+                              color: _accent,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    if (recentSessions.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: _cardBg,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Text(
+                          'No sessions yet. Start with Gym Check-In.',
+                          style: TextStyle(color: _muted, fontSize: 14),
+                        ),
+                      )
+                    else
+                      ...recentSessions.map(_buildRecentTile),
+                    const SizedBox(height: 18),
                   ],
                 ),
-                const SizedBox(height: 10),
-                if (recentSessions.isEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: _cardBg,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Text(
-                      'No sessions yet. Start with Gym Check-In.',
-                      style: TextStyle(color: _muted, fontSize: 14),
-                    ),
-                  )
-                else
-                  ...recentSessions.map(_buildRecentTile),
-                const SizedBox(height: 18),
-              ],
+              ),
             ),
           ),
-        ),
+          StatsScreen(memberId: widget.memberId, embedded: true),
+          _RewardsPlaceholder(),
+        ],
       ),
     );
   }
@@ -672,19 +633,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Row(
       children: [
-        Material(
-          color: _cardBg,
-          borderRadius: BorderRadius.circular(12),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: _openQuickMenu,
-            child: const SizedBox(
-              width: 40,
-              height: 40,
-              child: Icon(Icons.menu_rounded, color: _ink),
-            ),
-          ),
-        ),
+        const FitnessFactorLogo(size: 80),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -1120,13 +1069,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBottomNav() {
     final items = [
       (Icons.home_outlined, Icons.home_rounded, 'Home'),
-      (Icons.location_on_outlined, Icons.location_on_rounded, 'Arrival'),
       (
         Icons.local_fire_department_outlined,
         Icons.local_fire_department_rounded,
         'Streaks',
       ),
-      (Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+      (Icons.emoji_events_outlined, Icons.emoji_events_rounded, 'Rewards'),
     ];
 
     return LayoutBuilder(
@@ -1182,9 +1130,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   final (icon, activeIcon, label) = items[index];
 
                   return Expanded(
-                    child: GestureDetector(
+                    child: InkWell(
                       onTap: () => _handleNavTap(index),
-                      behavior: HitTestBehavior.opaque,
+                      borderRadius: BorderRadius.circular(22),
+                      splashColor: _accent.withOpacity(0.12),
+                      highlightColor: _accent.withOpacity(0.07),
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: tiny ? 2 : 4),
                         child: Column(
@@ -1250,5 +1200,68 @@ class _HomeScreenState extends State<HomeScreen> {
     _historySub?.cancel();
     _statsSub?.cancel();
     super.dispose();
+  }
+}
+
+class _RewardsPlaceholder extends StatelessWidget {
+  static const _blue = Color(0xFF035C4A);
+  static const _bg = Color(0xFFF9F7F2);
+  static const _card = Color(0xFFF3F2ED);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: _bg,
+        foregroundColor: _ink,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Rewards',
+          style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: _blue.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.emoji_events_rounded,
+                  color: _blue,
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Rewards Coming Soon',
+                style: TextStyle(
+                  color: _ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Earn badges, unlock achievements, and track your fitness milestones.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: _muted, fontSize: 14, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

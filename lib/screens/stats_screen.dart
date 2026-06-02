@@ -6,7 +6,8 @@ import '../services/attendance_service.dart';
 
 class StatsScreen extends StatefulWidget {
   final String memberId;
-  const StatsScreen({super.key, required this.memberId});
+  final bool embedded;
+  const StatsScreen({super.key, required this.memberId, this.embedded = false});
 
   @override
   State<StatsScreen> createState() => _StatsScreenState();
@@ -53,7 +54,16 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      appBar: AppBar(
+      appBar: widget.embedded ? AppBar(
+        backgroundColor: _bg,
+        foregroundColor: _ink,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'My Stats',
+          style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
+        ),
+      ) : AppBar(
         backgroundColor: _bg,
         foregroundColor: _ink,
         elevation: 0,

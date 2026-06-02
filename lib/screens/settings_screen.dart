@@ -14,6 +14,7 @@ class SettingsScreen extends StatefulWidget {
   final String memberName;
   final String memberPhone;
   final String gymId;
+  final bool embedded;
 
   const SettingsScreen({
     super.key,
@@ -21,6 +22,7 @@ class SettingsScreen extends StatefulWidget {
     required this.memberName,
     required this.memberPhone,
     required this.gymId,
+    this.embedded = false,
   });
 
   @override
@@ -36,12 +38,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   static const _muted = Color(0xFF535E62);
 
   Map<String, dynamic>? _member;
+  Map<String, dynamic> _stats = {};
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
     _load();
+    AttendanceService.statsStream(widget.memberId).listen((s) {
+      if (mounted) setState(() => _stats = s);
+    });
   }
 
   Future<void> _load() async {
@@ -75,31 +81,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _logout() async {
-    final confirm = await showDialog<bool>(
+    final streak = (_stats['streak'] as int?) ?? 0;
+    final weekVisits = (_stats['weekVisits'] as int?) ?? 0;
+    final totalVisits = (_stats['totalVisits'] as int?) ?? 0;
+
+    final confirm = await showModalBottomSheet<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: _card,
-        title: const Text(
-          'Log Out',
-          style: TextStyle(color: _ink, fontWeight: FontWeight.w700),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFFF3F2ED),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        content: Text(
-          'Are you sure you want to log out?',
-          style: TextStyle(color: _muted),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: _muted)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Log Out',
-              style: TextStyle(color: _red, fontWeight: FontWeight.w700),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFC3C8C6),
+                borderRadius: BorderRadius.circular(99),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: _red.withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.logout_rounded, color: _red, size: 30),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Are you sure you want to leave?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF2A323E),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Your progress will be waiting when you come back.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF535E62), fontSize: 14, height: 1.4),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                _statPill('🔥', '$streak', 'day streak'),
+                const SizedBox(width: 10),
+                _statPill('📅', '$weekVisits', 'this week'),
+                const SizedBox(width: 10),
+                _statPill('🏋️', '$totalVisits', 'total visits'),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, false),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _blue,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Keep my streak 🔥',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Log out anyway',
+                  style: TextStyle(
+                    color: Color(0xFF535E62),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
     if (confirm != true || !mounted) return;
@@ -113,6 +193,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
             OnboardingFlowScreen(onComplete: AuthPrefs.markOnboardingCompleted),
       ),
       (_) => false,
+    );
+  }
+
+  Widget _statPill(String emoji, String value, String label) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: _blue.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _blue.withOpacity(0.12)),
+        ),
+        child: Column(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Color(0xFF2A323E),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              label,
+              style: const TextStyle(color: Color(0xFF535E62), fontSize: 11),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -137,14 +248,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         backgroundColor: _bg,
         foregroundColor: _ink,
-        title: const Text(
-          'Settings',
-          style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
+        title: Text(
+          widget.embedded ? 'Profile' : 'Settings',
+          style: const TextStyle(fontWeight: FontWeight.w700, color: _ink),
         ),
         elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Divider(height: 1, color: const Color(0xFFC3C8C6)),
+        automaticallyImplyLeading: !widget.embedded,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: Color(0xFFC3C8C6)),
         ),
       ),
       body: _loading

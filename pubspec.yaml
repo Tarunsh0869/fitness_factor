@@ -43,6 +43,7 @@ dependencies:
   local_auth: ^3.0.1
   google_sign_in: ^7.2.0
   firebase_crashlytics: ^4.0.0
+  flutter_bloc: ^9.1.1
 
 dev_dependencies:
   flutter_test:
