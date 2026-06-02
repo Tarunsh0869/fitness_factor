@@ -7,7 +7,12 @@ import '../services/geo_service.dart';
 
 class AdminGymSettingsScreen extends StatefulWidget {
   final String gymId;
-  const AdminGymSettingsScreen({super.key, required this.gymId});
+  final bool embedded;
+  const AdminGymSettingsScreen({
+    super.key,
+    required this.gymId,
+    this.embedded = false,
+  });
 
   @override
   State<AdminGymSettingsScreen> createState() => _AdminGymSettingsScreenState();
@@ -232,7 +237,18 @@ class _AdminGymSettingsScreenState extends State<AdminGymSettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      appBar: AppBar(
+      appBar: widget.embedded
+          ? AppBar(
+              backgroundColor: _bg,
+              foregroundColor: _ink,
+              elevation: 0,
+              automaticallyImplyLeading: false,
+              title: const Text(
+                'Gym Settings',
+                style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
+              ),
+            )
+          : AppBar(
         backgroundColor: _bg,
         foregroundColor: _ink,
         elevation: 0,

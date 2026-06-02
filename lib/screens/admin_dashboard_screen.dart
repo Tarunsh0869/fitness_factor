@@ -42,6 +42,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   static const _outline = Color(0xFFC3C8C6);
   static const _subtle = Color(0xFF7A8582);
 
+  int _selectedTab = 0;
+
   Map<String, dynamic> _stats = {
     'totalMembers': 0,
     'insideNow': 0,
@@ -347,12 +349,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadAll,
-          color: _blue,
-          backgroundColor: _card,
-          child: CustomScrollView(
+      bottomNavigationBar: _buildBottomNav(),
+      body: IndexedStack(
+        key: ValueKey(_currentGymId),
+        index: _selectedTab,
+        children: [
+          SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _loadAll,
+              color: _blue,
+              backgroundColor: _card,
+              child: CustomScrollView(
             slivers: [
               _buildAppBar(),
               SliverPadding(
@@ -382,6 +389,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ],
           ),
         ),
+          ),
+          AdminMembersScreen(gymId: _currentGymId, embedded: true),
+          AdminAttendanceScreen(gymId: _currentGymId, embedded: true),
+          AdminGymSettingsScreen(gymId: _currentGymId, embedded: true),
+        ],
       ),
     );
   }
@@ -1499,6 +1511,144 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: Center(
         child: Text(msg, style: TextStyle(color: _subtle, fontSize: 13)),
       ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    final items = [
+      (Icons.dashboard_outlined, Icons.dashboard_rounded, 'Dashboard'),
+      (Icons.people_outline, Icons.people_rounded, 'Members'),
+      (Icons.fact_check_outlined, Icons.fact_check_rounded, 'Attendance'),
+      (Icons.settings_outlined, Icons.settings_rounded, 'Settings'),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final marginX = 14.0;
+        final paddingX = 10.0;
+        final paddingY = 9.0;
+        final itemWidth = (width - (marginX * 2) - (paddingX * 2)) / items.length;
+        final activePillWidth = (itemWidth - 8).clamp(38.0, 58.0).toDouble();
+        final inactivePillWidth = (itemWidth - 14).clamp(34.0, 46.0).toDouble();
+        final pillHeight = 34.0;
+
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(marginX, 0, marginX, 12),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: paddingX, vertical: paddingY),
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.circular(34),
+                border: Border.all(color: Colors.white.withOpacity(0.72)),
+                boxShadow: [
+                  BoxShadow(
+                    color: _blue.withOpacity(0.16),
+                    blurRadius: 28,
+                    offset: const Offset(0, 14),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: List.generate(items.length, (index) {
+                  final selected = index == _selectedTab;
+                  final (icon, activeIcon, label) = items[index];
+                  final alerts = index == 1
+                      ? (_stats['pendingVerify'] as int? ?? 0)
+                      : 0;
+
+                  return Expanded(
+                    child: InkWell(
+                      onTap: () => setState(() => _selectedTab = index),
+                      borderRadius: BorderRadius.circular(22),
+                      splashColor: _blue.withOpacity(0.12),
+                      highlightColor: _blue.withOpacity(0.07),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 220),
+                                  curve: Curves.easeOut,
+                                  width: selected ? activePillWidth : inactivePillWidth,
+                                  height: pillHeight,
+                                  decoration: BoxDecoration(
+                                    color: selected
+                                        ? _blue.withOpacity(0.14)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(22),
+                                  ),
+                                  child: Icon(
+                                    selected ? activeIcon : icon,
+                                    color: selected ? _blue : _muted,
+                                    size: selected ? 21 : 19,
+                                  ),
+                                ),
+                                if (alerts > 0)
+                                  Positioned(
+                                    right: 0,
+                                    top: 0,
+                                    child: Container(
+                                      width: 16,
+                                      height: 16,
+                                      decoration: const BoxDecoration(
+                                        color: _red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '$alerts',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                label,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  color: selected ? _blue : _muted,
+                                  fontWeight: selected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

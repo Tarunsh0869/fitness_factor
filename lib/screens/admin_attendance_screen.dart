@@ -7,7 +7,12 @@ import 'admin_member_detail_screen.dart';
 
 class AdminAttendanceScreen extends StatefulWidget {
   final String gymId;
-  const AdminAttendanceScreen({super.key, required this.gymId});
+  final bool embedded;
+  const AdminAttendanceScreen({
+    super.key,
+    required this.gymId,
+    this.embedded = false,
+  });
 
   @override
   State<AdminAttendanceScreen> createState() => _AdminAttendanceScreenState();
@@ -131,7 +136,28 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
 
     return Scaffold(
       backgroundColor: _bg,
-      appBar: AppBar(
+      appBar: widget.embedded
+          ? AppBar(
+              backgroundColor: _bg,
+              foregroundColor: _ink,
+              elevation: 0,
+              automaticallyImplyLeading: false,
+              title: const Text(
+                'Attendance Records',
+                style: TextStyle(fontWeight: FontWeight.w700, color: _ink),
+              ),
+              actions: [
+                TextButton.icon(
+                  onPressed: _pickDate,
+                  icon: const Icon(Icons.calendar_today_outlined, color: _blue, size: 16),
+                  label: Text(
+                    isToday ? 'Today' : DateFormat('MMM d, yyyy').format(_selectedDate),
+                    style: const TextStyle(color: _blue, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            )
+          : AppBar(
         backgroundColor: _bg,
         foregroundColor: _ink,
         elevation: 0,
@@ -182,7 +208,7 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
                 ...records.map(_recordTile),
               ],
             ),
-    );
+      );  
   }
 
   Widget _buildDayStats() {
@@ -228,9 +254,9 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
           const SizedBox(height: 14),
           Row(
             children: [
-              _dayStat('Total Visits', '$total', _blue),
+              _dayStat('Visits', '$total', _blue),
               _dayStat('Unique', '$unique', _green),
-              _dayStat('Completed', '$completed', _green),
+              _dayStat('Done', '$completed', _green),
               _dayStat('Open', '$openSessions', _amber),
             ],
           ),
@@ -238,13 +264,13 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
           Row(
             children: [
               _dayStat(
-                'Avg Duration',
+                'Avg Dur',
                 avgMin == 0 ? '-' : _fmtDur(avgMin),
                 _amber,
               ),
-              _dayStat('Peak Hour', peakStr, const Color(0xFF535E62)),
-              _dayStat('Repeat 7d', '$repeat7', _blue),
-              _dayStat('Repeat 30d', '$repeat30', _green),
+              _dayStat('Peak', peakStr, const Color(0xFF535E62)),
+              _dayStat('7d Rep', '$repeat7', _blue),
+              _dayStat('30d Rep', '$repeat30', _green),
             ],
           ),
           if (totalMin > 0) ...[
@@ -372,7 +398,7 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
                       children: [
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 500),
-                          height: (frac * 48).clamp(2.0, 48.0),
+                          height: (frac * 44).clamp(2.0, 44.0),
                           decoration: BoxDecoration(
                             color: isPeak ? _amber : _blue.withOpacity(0.35),
                             borderRadius: BorderRadius.circular(3),
