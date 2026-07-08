@@ -4,6 +4,22 @@ A Flutter + .NET 8 gym attendance app with Firebase and geofencing.
 
 ---
 
+## Features
+
+- Guest mode with no account required
+- Starter workout tracking and gym time recording for guests
+- Save guest progress after sign-in / registration
+- Email/password authentication and Google sign-in
+- Member profile completion with fitness goal and activity level
+- Gym geofencing and automatic check-in/check-out tracking
+- Attendance history and session duration analytics
+- Member stats and progress dashboard
+- Premium upgrade flow with guest progress lock-in messaging
+- Firebase Firestore data persistence and FCM notifications
+- .NET 8 REST API backend with SQL Server support
+
+---
+
 ## Project Structure
 
 ```
@@ -101,7 +117,7 @@ Tables created:
 - `Members` — registered members
 - `Attendances` — check-in/check-out records
 
-A default gym (`Fitness Factor HQ`) is seeded on first run.
+A default gym (`Fitness Factor`) is seeded on first run.
 
 ---
 

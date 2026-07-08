@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "fitness_factor" "\0"
+            VALUE "FileDescription", "Fitness Factor" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "fitness_factor" "\0"
+            VALUE "InternalName", "Fitness Factor" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "fitness_factor.exe" "\0"
-            VALUE "ProductName", "fitness_factor" "\0"
+            VALUE "OriginalFilename", "Fitness Factor.exe" "\0"
+            VALUE "ProductName", "Fitness Factor" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -3,9 +3,10 @@
 import 'package:flutter/material.dart';
 import '../services/attendance_service.dart';
 import '../services/auth_prefs.dart';
+import '../services/firebase_service.dart';
 import 'edit_profile_screen.dart';
 import 'stats_screen.dart';
-import 'login_screen.dart';
+import 'onboarding/onboarding_flow_screen.dart';
 import 'member_feedback_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class SettingsScreen extends StatefulWidget {
   final String memberName;
   final String memberPhone;
   final String gymId;
+  final bool embedded;
 
   const SettingsScreen({
     super.key,
@@ -20,6 +22,7 @@ class SettingsScreen extends StatefulWidget {
     required this.memberName,
     required this.memberPhone,
     required this.gymId,
+    this.embedded = false,
   });
 
   @override
@@ -27,29 +30,31 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  static const _blue  = Color(0xFF2563EB);
-  static const _red   = Color(0xFFEF4444);
-  static const _bg    = Color(0xFFF0F4FF);
-  static const _card  = Colors.white;
-  static const _ink   = Color(0xFF111827);
-  static const _muted = Color(0xFF6B7280);
+  static const _blue = Color(0xFF035C4A);
+  static const _red = Color(0xFFB3261E);
+  static const _bg = Color(0xFFF9F7F2);
+  static const _card = Color(0xFFF3F2ED);
+  static const _ink = Color(0xFF2A323E);
+  static const _muted = Color(0xFF535E62);
 
-  Map<String, dynamic>? _gym;
   Map<String, dynamic>? _member;
+  Map<String, dynamic> _stats = {};
   bool _loading = true;
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+    AttendanceService.statsStream(widget.memberId).listen((s) {
+      if (mounted) setState(() => _stats = s);
+    });
+  }
 
   Future<void> _load() async {
-    final results = await Future.wait([
-      AttendanceService.getGym(widget.gymId),
-      AttendanceService.getMember(widget.memberId),
-    ]);
+    final member = await AttendanceService.getMember(widget.memberId);
     if (mounted) {
       setState(() {
-        _gym     = results[0];
-        _member  = results[1];
+        _member = member;
         _loading = false;
       });
     }
@@ -61,51 +66,179 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (_) => EditProfileScreen(
-          memberId:          widget.memberId,
-          initialName:       m['name']            ?? '',
-          initialEmergency:  m['emergencyContact'] ?? '',
-          initialMembership: m['membershipType']   ?? 'Basic',
-        ),
+        builder: (_) =>
+            EditProfileScreen(memberId: widget.memberId, initialProfile: m),
       ),
     );
     if (result != null) {
       setState(() => _member = {...?_member, ...result});
       await AuthPrefs.save(
-        memberId:   widget.memberId,
+        memberId: widget.memberId,
         memberName: result['name'],
-        gymId:      widget.gymId,
+        gymId: widget.gymId,
       );
     }
   }
 
   Future<void> _logout() async {
-    final confirm = await showDialog<bool>(
+    final streak = (_stats['streak'] as int?) ?? 0;
+    final weekVisits = (_stats['weekVisits'] as int?) ?? 0;
+    final totalVisits = (_stats['totalVisits'] as int?) ?? 0;
+
+    final confirm = await showModalBottomSheet<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Text('Log Out',
-            style: TextStyle(color: _ink, fontWeight: FontWeight.w700)),
-        content: Text('Are you sure you want to log out?',
-            style: TextStyle(color: _muted)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: _muted)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Log Out',
-                style: TextStyle(color: _red, fontWeight: FontWeight.w700)),
-          ),
-        ],
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFFF3F2ED),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFC3C8C6),
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: _red.withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.logout_rounded, color: _red, size: 30),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Are you sure you want to leave?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF2A323E),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Your progress will be waiting when you come back.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF535E62), fontSize: 14, height: 1.4),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                _statPill('🔥', '$streak', 'day streak'),
+                const SizedBox(width: 10),
+                _statPill('📅', '$weekVisits', 'this week'),
+                const SizedBox(width: 10),
+                _statPill('🏋️', '$totalVisits', 'total visits'),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, false),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _blue,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Keep my streak 🔥',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Log out anyway',
+                  style: TextStyle(
+                    color: Color(0xFF535E62),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
     if (confirm != true || !mounted) return;
+    await AttendanceService.logout();
     await AuthPrefs.clear();
     if (!mounted) return;
-    Navigator.pushAndRemoveUntil(context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            OnboardingFlowScreen(onComplete: AuthPrefs.markOnboardingCompleted),
+      ),
+      (_) => false,
+    );
+  }
+
+  Widget _statPill(String emoji, String value, String label) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: _blue.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _blue.withOpacity(0.12)),
+        ),
+        child: Column(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Color(0xFF2A323E),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              label,
+              style: const TextStyle(color: Color(0xFF535E62), fontSize: 11),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _enableNotifications() async {
+    final granted = await FirebaseService.requestNotificationPermission();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          granted
+              ? 'Notifications enabled.'
+              : 'Notifications were not enabled.',
+        ),
+      ),
+    );
   }
 
   @override
@@ -115,12 +248,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         backgroundColor: _bg,
         foregroundColor: _ink,
-        title: const Text('Settings',
-            style: TextStyle(fontWeight: FontWeight.w700, color: _ink)),
+        title: Text(
+          widget.embedded ? 'Profile' : 'Settings',
+          style: const TextStyle(fontWeight: FontWeight.w700, color: _ink),
+        ),
         elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Divider(height: 1, color: Colors.grey.shade200),
+        automaticallyImplyLeading: !widget.embedded,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: Color(0xFFC3C8C6)),
         ),
       ),
       body: _loading
@@ -129,67 +265,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.all(20),
               children: [
                 _buildProfileCard(),
+                const SizedBox(height: 16),
+                _buildGuestProgressCard(),
                 const SizedBox(height: 24),
                 _sectionLabel('Quick Actions'),
                 _actionTile(
                   icon: Icons.bar_chart_outlined,
                   label: 'My Stats & Analytics',
                   color: _blue,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => StatsScreen(memberId: widget.memberId),
-                  )),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => StatsScreen(memberId: widget.memberId),
+                    ),
+                  ),
                 ),
                 _actionTile(
                   icon: Icons.edit_outlined,
                   label: 'Edit Profile',
-                  color: const Color(0xFF7C3AED),
+                  color: const Color(0xFF535E62),
                   onTap: _openEditProfile,
                 ),
                 _actionTile(
                   icon: Icons.feedback_outlined,
                   label: 'Send Feedback / Report Issue',
-                  color: const Color(0xFFD97706),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => MemberFeedbackScreen(
-                      memberId: widget.memberId,
-                      gymId:    widget.gymId,
+                  color: const Color(0xFFC7A66A),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MemberFeedbackScreen(
+                        memberId: widget.memberId,
+                        gymId: widget.gymId,
+                      ),
                     ),
-                  )),
+                  ),
+                ),
+                _actionTile(
+                  icon: Icons.notifications_active_outlined,
+                  label: 'Enable Notifications',
+                  color: _blue,
+                  onTap: _enableNotifications,
                 ),
                 const SizedBox(height: 24),
-                _sectionLabel('Member'),
-                _infoTile(Icons.badge_outlined,  'Member ID', widget.memberId),
-                _infoTile(Icons.phone_outlined,  'Phone',
-                    widget.memberPhone.isEmpty ? '\u2014' : widget.memberPhone),
-                if (_member != null) ...[
-                  _infoTile(Icons.emergency_outlined, 'Emergency',
-                      _member!['emergencyContact'] as String? ?? '\u2014'),
-                  _membershipBadgeTile(
-                      _member!['membershipType'] as String? ?? 'Basic'),
-                ],
-                const SizedBox(height: 24),
-                _sectionLabel('Gym'),
-                if (_gym != null) ...[
-                  _infoTile(Icons.store_outlined, 'Gym Name',
-                      _gym!['name'] as String? ?? widget.gymId),
-                  _infoTile(Icons.my_location_outlined, 'Latitude',
-                      (_gym!['latitude'] as num?)?.toStringAsFixed(6) ?? '\u2014'),
-                  _infoTile(Icons.my_location_outlined, 'Longitude',
-                      (_gym!['longitude'] as num?)?.toStringAsFixed(6) ?? '\u2014'),
-                  _radiusTile((_gym!['radiusMeters'] as num?)?.toInt() ?? 50),
-                ] else
-                  _infoTile(Icons.error_outline, 'Status',
-                      'Could not load gym data'),
-                const SizedBox(height: 24),
-                _sectionLabel('App'),
-                _infoTile(Icons.info_outline,         'Version',       '1.0.0'),
-                _infoTile(Icons.location_on_outlined,  'Geo Mode',
-                    'Auto (30s debounce)'),
-                _infoTile(Icons.timer_outlined,        'Auto Checkout',
-                    '5 min after exit'),
-                const SizedBox(height: 32),
                 SizedBox(
-                  width: double.infinity, height: 50,
+                  width: double.infinity,
+                  height: 50,
                   child: OutlinedButton.icon(
                     onPressed: _logout,
                     icon: const Icon(Icons.logout_outlined, size: 18),
@@ -198,7 +318,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       foregroundColor: _red,
                       side: const BorderSide(color: _red, width: 1.5),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
@@ -209,40 +330,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildProfileCard() {
-    final name       = _member?['name']           as String? ?? widget.memberName;
-    final membership = _member?['membershipType'] as String? ?? 'Basic';
-    final membershipColors = {
-      'Basic':   _blue,
-      'Premium': const Color(0xFFD97706),
-      'VIP':     const Color(0xFF7C3AED),
-    };
-    final color = membershipColors[membership] ?? _blue;
+    final name = _member?['name'] as String? ?? widget.memberName;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: _card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.2)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05),
-            blurRadius: 12, offset: const Offset(0, 4))],
+        border: Border.all(color: _blue.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 60, height: 60,
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [color, color.withOpacity(0.7)],
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
+              gradient: const LinearGradient(
+                colors: [_blue, Color(0xFF02473A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: const TextStyle(color: Colors.white, fontSize: 26,
-                    fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ),
@@ -251,21 +375,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(color: _ink, fontSize: 18,
-                    fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text(widget.memberPhone.isEmpty ? 'No phone' : widget.memberPhone,
-                    style: TextStyle(color: _muted, fontSize: 13)),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(6),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
                   ),
-                  child: Text(membership,
-                      style: TextStyle(color: color, fontSize: 12,
-                          fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.memberPhone.isEmpty ? 'No phone' : widget.memberPhone,
+                  style: TextStyle(color: _muted, fontSize: 13),
                 ),
               ],
             ),
@@ -279,11 +400,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildGuestProgressCard() {
+    final member = _member;
+    if (member == null) return const SizedBox.shrink();
+
+    final starterWorkouts = member['guestStarterWorkoutsCompleted'] as int? ?? 0;
+    final meaningfulActions = member['guestMeaningfulActionCount'] as int? ?? 0;
+    final gymTimeMinutes = member['guestGymTimeMinutes'] as int? ?? 0;
+    final lastAction = (member['guestLastAction'] as String? ?? '').trim();
+
+    if (starterWorkouts == 0 && meaningfulActions == 0 && gymTimeMinutes == 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _blue.withOpacity(0.16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Saved Guest Progress',
+            style: TextStyle(
+              color: _blue,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text('Starter workouts saved: $starterWorkouts',
+              style: TextStyle(color: _ink, fontSize: 13)),
+          const SizedBox(height: 6),
+          Text('Gym time saved: $gymTimeMinutes minutes',
+              style: TextStyle(color: _ink, fontSize: 13)),
+          const SizedBox(height: 6),
+          Text('Progress actions saved: $meaningfulActions',
+              style: TextStyle(color: _ink, fontSize: 13)),
+          if (lastAction.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text('Last action: $lastAction',
+                style: TextStyle(color: _muted, fontSize: 12)),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _sectionLabel(String label) => Padding(
     padding: const EdgeInsets.only(bottom: 10),
-    child: Text(label.toUpperCase(),
-        style: const TextStyle(color: _blue, fontSize: 11,
-            fontWeight: FontWeight.w700, letterSpacing: 1.4)),
+    child: Text(
+      label.toUpperCase(),
+      style: const TextStyle(
+        color: _blue,
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.4,
+      ),
+    ),
   );
 
   Widget _actionTile({
@@ -301,13 +478,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: _card,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: color.withOpacity(0.15)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03),
-              blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              width: 36, height: 36,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(10),
@@ -315,107 +498,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Icon(icon, color: color, size: 18),
             ),
             const SizedBox(width: 12),
-            Expanded(child: Text(label,
-                style: const TextStyle(color: _ink, fontSize: 14,
-                    fontWeight: FontWeight.w600))),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: _ink,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
             Icon(Icons.chevron_right, color: _muted, size: 20),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _infoTile(IconData icon, String label, String value) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03),
-            blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: _blue, size: 20),
-          const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: _muted, fontSize: 14)),
-          const Spacer(),
-          Flexible(
-            child: Text(value,
-                textAlign: TextAlign.end,
-                style: const TextStyle(color: _ink, fontSize: 14,
-                    fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _membershipBadgeTile(String type) {
-    final colors = {
-      'Basic':   _blue,
-      'Premium': const Color(0xFFD97706),
-      'VIP':     const Color(0xFF7C3AED),
-    };
-    final color = colors[type] ?? _blue;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03),
-            blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.card_membership_outlined, color: color, size: 20),
-          const SizedBox(width: 12),
-          Text('Membership', style: TextStyle(color: _muted, fontSize: 14)),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(type,
-                style: TextStyle(color: color, fontSize: 13,
-                    fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _radiusTile(int radius) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03),
-            blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.radar_outlined, color: _blue, size: 20),
-          const SizedBox(width: 12),
-          Text('Geofence Radius', style: TextStyle(color: _muted, fontSize: 14)),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _blue.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text('${radius}m',
-                style: const TextStyle(color: _blue, fontSize: 13,
-                    fontWeight: FontWeight.w700)),
-          ),
-        ],
       ),
     );
   }

@@ -1,6 +1,6 @@
 {
-    "name": "fitness_factor",
-    "short_name": "fitness_factor",
+    "name": "Fitness Factor",
+    "short_name": "Fitness Factor",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

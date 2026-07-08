@@ -1,5 +1,5 @@
 name: fitness_factor
-description: "A new Flutter project."
+description: "Fitness Factor — gym attendance and progress tracking app."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -28,6 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  flutter_skill: ^0.2.6
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
@@ -40,6 +41,10 @@ dependencies:
   rxdart: ^0.28.0
   intl: ^0.19.0
   shared_preferences: ^2.3.0
+  local_auth: ^3.0.1
+  google_sign_in: ^7.2.0
+  firebase_crashlytics: ^4.0.0
+  flutter_bloc: ^9.1.1
 
 dev_dependencies:
   flutter_test:
@@ -63,10 +68,30 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/logo/
+    - assets/onboarding/
+    - assets/onboarding/focus/
+    - assets/onboarding/welcome/
+    - assets/onboarding/motivation/
+    - assets/onboarding/gender/
+    - assets/onboarding/gender/male.png
+    - assets/onboarding/gender/female.png
+    - assets/onboarding/welcome/tile_01.png
+    - assets/onboarding/welcome/tile_02.png
+    - assets/onboarding/welcome/tile_03.png
+    - assets/onboarding/welcome/tile_04.png
+    - assets/onboarding/welcome/tile_05.png
+    - assets/onboarding/welcome/tile_06.png
+    - assets/onboarding/welcome/tile_07.png
+    - assets/onboarding/welcome/tile_08.png
+    - assets/onboarding/welcome/tile_09.png
+    - assets/onboarding/welcome/tile_10.png
+    - assets/onboarding/welcome/tile_11.png
+    - assets/onboarding/welcome/tile_12.png
+    - assets/onboarding/motivation/progress.png
+    - assets/onboarding/motivation/push.png
+    - assets/onboarding/motivation/right_place.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

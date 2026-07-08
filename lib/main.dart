@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
+import 'services/admin_service.dart';
+import 'services/attendance_service.dart';
+import 'services/biometric_auth_service.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_prefs.dart';
+import 'theme/app_theme.dart';
+import 'screens/complete_profile_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/seed_screen.dart';
+import 'screens/pending_verification_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
+import 'screens/admin_gym_registration_screen.dart';
+import 'screens/onboarding/onboarding_flow_screen.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
@@ -18,12 +27,7 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-    systemNavigationBarColor: Colors.white,
-    systemNavigationBarIconBrightness: Brightness.dark,
-  ));
+  SystemChrome.setSystemUIOverlayStyle(AppTheme.overlayStyle);
 
   try {
     if (Firebase.apps.isEmpty) {
@@ -33,6 +37,10 @@ void main() async {
     }
     FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
     await FirebaseService.init();
+
+    // ── Crash reporting ───────────────────────────────────────────────────────
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
   } catch (e) {
     debugPrint('[Firebase] Init failed: $e');
   }
@@ -48,25 +56,43 @@ class FitnessFactorApp extends StatelessWidget {
     return MaterialApp(
       title: 'Fitness Factor',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2563EB),
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF0F4FF),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFF0F4FF),
-          foregroundColor: Color(0xFF111827),
-          elevation: 0,
-          systemOverlayStyle: SystemUiOverlayStyle(
-            statusBarIconBrightness: Brightness.dark,
-            statusBarColor: Colors.transparent,
-          ),
-        ),
-        cardColor: Colors.white,
-      ),
-      home: const _AuthGate(),
+      theme: AppTheme.theme,
+      home: const _StartupGate(),
+    );
+  }
+}
+
+class _StartupGate extends StatelessWidget {
+  const _StartupGate();
+
+  Future<bool> _shouldShowOnboarding() async {
+    final savedSession = await AuthPrefs.load();
+    return savedSession == null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _shouldShowOnboarding(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: AppTheme.background,
+            body: Center(
+              child: CircularProgressIndicator(color: AppTheme.primary),
+            ),
+          );
+        }
+
+        if (snap.data == true) {
+          return OnboardingFlowScreen(
+            onComplete: AuthPrefs.markOnboardingCompleted,
+            completeDestinationBuilder: (_) => const _AuthGate(),
+          );
+        }
+
+        return const _AuthGate();
+      },
     );
   }
 }
@@ -74,20 +100,31 @@ class FitnessFactorApp extends StatelessWidget {
 class _AuthGate extends StatelessWidget {
   const _AuthGate();
 
+  Future<QuerySnapshot> _loadGyms() async {
+    await AdminService.ensureDefaultGym();
+    return FirebaseFirestore.instance.collection('gyms').limit(1).get();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('gyms').doc('gym_001').get(),
+    return FutureBuilder<QuerySnapshot>(
+      future: _loadGyms(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            backgroundColor: Color(0xFFF0F4FF),
+            backgroundColor: AppTheme.background,
             body: Center(
-              child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+              child: CircularProgressIndicator(color: AppTheme.primary),
             ),
           );
         }
-        if (!snap.hasData || !snap.data!.exists) return const SeedScreen();
+
+        // If no gyms exist, show registration screen for first admin
+        if (!snap.hasData || snap.data!.docs.isEmpty) {
+          return const AdminGymRegistrationScreen();
+        }
+
+        // If gyms exist, check auth state
         return const _AutoLoginGate();
       },
     );
@@ -97,6 +134,14 @@ class _AuthGate extends StatelessWidget {
 class _AutoLoginGate extends StatelessWidget {
   const _AutoLoginGate();
 
+  String _roleOf(Map<String, dynamic> saved) {
+    final role = saved['role'] as String?;
+    if (role != null && role.isNotEmpty) return role;
+    return saved['isAdmin'] == true
+        ? AuthPrefs.roleGymMaster
+        : AuthPrefs.roleMember;
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>?>(
@@ -104,25 +149,139 @@ class _AutoLoginGate extends StatelessWidget {
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            backgroundColor: Color(0xFFF0F4FF),
+            backgroundColor: AppTheme.background,
             body: Center(
-              child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+              child: CircularProgressIndicator(color: AppTheme.primary),
             ),
           );
         }
         final saved = snap.data;
         if (saved != null) {
-          FirebaseService.setMemberId(saved['memberId'] as String);
-          if (saved['isAdmin'] == true) {
-            return AdminDashboardScreen(gymId: saved['gymId'] as String);
+          final role = _roleOf(saved);
+          if (AuthPrefs.isPrivilegedRole(role)) {
+            return _BiometricSessionGate(saved: saved);
           }
-          return HomeScreen(
-            memberId:   saved['memberId'] as String,
-            memberName: saved['memberName'] as String,
-            gymId:      saved['gymId'] as String,
-          );
+          if (FirebaseAuth.instance.currentUser == null) {
+            AuthPrefs.clear();
+            return OnboardingFlowScreen(
+              onComplete: AuthPrefs.markOnboardingCompleted,
+            );
+          }
+          return _BiometricSessionGate(saved: saved);
         }
         return const LoginScreen();
+      },
+    );
+  }
+}
+
+class _BiometricSessionGate extends StatefulWidget {
+  final Map<String, dynamic> saved;
+
+  const _BiometricSessionGate({required this.saved});
+
+  @override
+  State<_BiometricSessionGate> createState() => _BiometricSessionGateState();
+}
+
+class _BiometricSessionGateState extends State<_BiometricSessionGate> {
+  late final Future<bool> _unlockFuture;
+
+  String _roleOf(Map<String, dynamic> saved) {
+    final role = saved['role'] as String?;
+    if (role != null && role.isNotEmpty) return role;
+    return saved['isAdmin'] == true
+        ? AuthPrefs.roleGymMaster
+        : AuthPrefs.roleMember;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _unlockFuture = BiometricAuthService.authenticateForLogin();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _unlockFuture,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFF9F7F2),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFF035C4A)),
+            ),
+          );
+        }
+
+        if (snap.data != true) {
+          return const LoginScreen();
+        }
+
+        final saved = widget.saved;
+        final role = _roleOf(saved);
+        FirebaseService.setMemberId(saved['memberId'] as String);
+        if (AuthPrefs.isPrivilegedRole(role)) {
+          return AdminDashboardScreen(
+            gymId: saved['gymId'] as String,
+            role: role,
+          );
+        }
+        return _MemberProfileGate(saved: saved);
+      },
+    );
+  }
+}
+
+class _MemberProfileGate extends StatelessWidget {
+  final Map<String, dynamic> saved;
+
+  const _MemberProfileGate({required this.saved});
+
+  Future<Map<String, dynamic>?> _loadMember() =>
+      AttendanceService.getMember(saved['memberId'] as String);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _loadMember(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFF9F7F2),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFF035C4A)),
+            ),
+          );
+        }
+
+        final member = snap.data;
+        final verificationStatus =
+            member?['verificationStatus'] as String? ?? 'pending';
+
+        if (verificationStatus == 'pending' ||
+            verificationStatus == 'rejected') {
+          return PendingVerificationScreen(
+            memberName: saved['memberName'] as String,
+            verificationStatus: verificationStatus,
+          );
+        }
+
+        if (snap.data != null &&
+            !(member?['profileCompleted'] as bool? ?? false)) {
+          return CompleteProfileScreen(
+            memberId: saved['memberId'] as String,
+            memberName: saved['memberName'] as String,
+            gymId: saved['gymId'] as String,
+          );
+        }
+
+        return HomeScreen(
+          memberId: saved['memberId'] as String,
+          memberName: saved['memberName'] as String,
+          gymId: saved['gymId'] as String,
+        );
       },
     );
   }
